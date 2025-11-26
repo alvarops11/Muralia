@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2020",             /* Versión de JS a generar */
+    "module": "commonjs",           /* Estándar de módulos de Node */
+    "outDir": "./dist",             /* Dónde se guardará el código compilado */
+    "rootDir": "./src",             /* Dónde está tu código fuente */
+    "strict": true,                 /* Activar todas las verificaciones estrictas */
+    "esModuleInterop": true,        /* Compatibilidad con módulos CommonJS */
+    "skipLibCheck": true,           /* Saltar chequeo de librerías externas (ahorra tiempo) */
+    "forceConsistentCasingInFileNames": true
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "**/*.test.ts"]
+}

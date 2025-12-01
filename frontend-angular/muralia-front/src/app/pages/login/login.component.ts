@@ -1,4 +1,3 @@
-// archivo: src/app/pages/login/login.component.ts
 import { Component } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -8,20 +7,26 @@ import { Router } from '@angular/router';
   standalone: true,
   imports: [FormsModule],
   template: `
-    <div style="padding: 40px; max-width: 600px; margin: 0 auto; font-family: sans-serif;">
-      <h1>🔑 Acceso Simulado</h1>
-      <p>Pega aquí tu Token JWT:</p>
-      
-      <textarea [(ngModel)]="token" rows="6" 
-        style="width: 100%; padding: 10px; font-family: monospace;" 
-        placeholder="eyJhbGciOi..."></textarea>
-      
-      <br><br>
-      <button (click)="saveToken()" style="padding: 10px 20px; cursor: pointer; background: #007bff; color: white; border: none;">
-        Guardar y Entrar
-      </button>
+    <div class="login-wrapper fade-in">
+      <div class="login-card">
+        <h1>👋 Bienvenido a Muralia</h1>
+        <p class="subtitle">Tu espacio de trabajo visual</p>
+        
+        <label>Introduce tu Token de acceso:</label>
+        <textarea [(ngModel)]="token" rows="5" placeholder="eyJhbGciOi..."></textarea>
+        
+        <button (click)="saveToken()" class="btn btn-primary full-width">
+          Entrar al Espacio
+        </button>
+      </div>
     </div>
-  `
+  `,
+  styles: [`
+    .login-wrapper { display: flex; align-items: center; justify-content: center; height: 100vh; background: #e0e7ff; }
+    .login-card { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+    .subtitle { color: #6b7280; margin-bottom: 20px; }
+    .full-width { width: 100%; margin-top: 10px; font-size: 1rem; padding: 12px; }
+  `]
 })
 export class LoginComponent {
   token = '';
@@ -31,8 +36,6 @@ export class LoginComponent {
     if(this.token.trim()) {
       localStorage.setItem('jwt_token', this.token.trim());
       this.router.navigate(['/boards']);
-    } else {
-      alert("Pega un token primero");
-    }
+    } else { alert("Pega un token válido"); }
   }
 }

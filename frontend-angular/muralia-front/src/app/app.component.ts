@@ -6,8 +6,9 @@ import { RouterOutlet } from '@angular/router';
   selector: 'app-root',
   standalone: true,
   imports: [RouterOutlet],
-  template: `<router-outlet></router-outlet>`, // HTML en línea
-  styles: [] // <--- CSS en línea (vacío por ahora)
+  // TRUCO: Usamos 'template' en vez de 'templateUrl' para no depender del archivo html
+  template: `<router-outlet></router-outlet>`, 
+  styleUrl: './app.component.css'
 })
 export class AppComponent {
   title = 'muralia-front';

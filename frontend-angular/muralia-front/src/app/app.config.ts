@@ -7,9 +7,7 @@ import { authInterceptor } from './auth.interceptor';
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    // Activamos las rutas y que puedan leer IDs de la URL
-    provideRouter(routes, withComponentInputBinding()),
-    // Activamos HTTP y enchufamos el Interceptor
+    provideRouter(routes, withComponentInputBinding()), // <--- TIENE QUE ESTAR ESTO
     provideHttpClient(withInterceptors([authInterceptor])) 
-  ]
+]
 };

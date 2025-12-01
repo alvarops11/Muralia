@@ -103,50 +103,80 @@ export const addPosit = async (req: Request, res: Response) => {
 };
 
 // 2. Editar/Mover Posit (Solo Orden)
+// 2. Editar/Mover un Posit (CON REORDENAMIENTO INTELIGENTE)
 export const updatePosit = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
   const user = req.currentUser!;
 
-  console.log('--- INTENTO DE ACTUALIZACIÓN ---');
-  console.log('1. Buscando Tablero:', boardId);
-  console.log('2. Buscando Posit:', positId);
-  console.log('3. Usuario solicitante:', user._id);
   try {
     const dataToUpdate = updatePositSchema.parse(req.body);
 
-    const updateQuery: any = {};
+    // 1. Buscamos el tablero completo (No usamos findOneAndUpdate porque necesitamos manipular el array)
+    const board = await Board.findOne({ 
+      _id: boardId, 
+      'participantes.usuario_id': user._id 
+    });
+
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+
+    // 2. Encontramos el posit dentro del array
+    const positIndex = board.posits.findIndex(p => p.posit_id === positId);
+    if (positIndex === -1) return res.status(404).json({ error: 'Posit no encontrado' });
+
+    const posit = board.posits[positIndex];
+
+    // --- LOGICA DE ACTUALIZACIÓN ---
+
+    // A) Si solo cambiamos texto/color (sin mover orden)
+    if (dataToUpdate.orden === undefined) {
+        if (dataToUpdate.titulo) posit.titulo = dataToUpdate.titulo;
+        if (dataToUpdate.contenido) posit.contenido = dataToUpdate.contenido;
+        if (dataToUpdate.color) posit.color = dataToUpdate.color;
+        
+        // Marcamos a Mongoose que hemos modificado el array
+        board.markModified('posits'); 
+    } 
     
-    // Mapeo directo de campos simples
-    if (dataToUpdate.titulo) updateQuery['posits.$.titulo'] = dataToUpdate.titulo;
-    if (dataToUpdate.contenido) updateQuery['posits.$.contenido'] = dataToUpdate.contenido;
-    if (dataToUpdate.color) updateQuery['posits.$.color'] = dataToUpdate.color;
-    
-    // LÓGICA DE ORDEN: Actualizamos específicamente la propiedad 'orden' dentro de 'posicion'
-    // Sin tocar X ni Y.
-    if (dataToUpdate.orden !== undefined) {
-      updateQuery['posits.$.posicion.orden'] = dataToUpdate.orden;
+    // B) Si cambiamos el ORDEN (Aquí está la magia ✨)
+    else {
+        // Actualizamos los datos básicos si vienen
+        if (dataToUpdate.titulo) posit.titulo = dataToUpdate.titulo;
+        if (dataToUpdate.contenido) posit.contenido = dataToUpdate.contenido;
+        if (dataToUpdate.color) posit.color = dataToUpdate.color;
+
+        // 1. Sacamos el posit de su lugar actual
+        board.posits.splice(positIndex, 1);
+
+        // 2. Ordenamos el resto de posits para asegurar que están limpios (0, 1, 2...)
+        // (Esto evita huecos raros si se borraron notas antes)
+        board.posits.sort((a, b) => (a.posicion.orden || 0) - (b.posicion.orden || 0));
+
+        // 3. Calculamos dónde meterlo
+        // Si el usuario pide orden 100 pero solo hay 3 notas, lo ponemos en la 3.
+        let nuevoIndice = dataToUpdate.orden;
+        if (nuevoIndice < 0) nuevoIndice = 0;
+        if (nuevoIndice > board.posits.length) nuevoIndice = board.posits.length;
+
+        // 4. Lo insertamos en la nueva posición (haciendo hueco)
+        board.posits.splice(nuevoIndice, 0, posit);
+
+        // 5. RE-NUMERAMOS TODO (0, 1, 2, 3...) para garantizar unicidad
+        board.posits.forEach((p, index) => {
+            p.posicion.orden = index;
+        });
+
+        board.markModified('posits');
     }
 
-    const board = await Board.findOneAndUpdate(
-      { 
-        _id: boardId, 
-        'posits.posit_id': positId,
-        'participantes.usuario_id': user._id 
-      },
-      { $set: updateQuery },
-      { new: true }
-    );
+    // Guardamos todos los cambios de golpe
+    await board.save();
 
-    if (!board) return res.status(404).json({ error: 'No se pudo actualizar' });
-
-    // Devolvemos el posit actualizado
-    const updatedPosit = board.posits.find(p => p.posit_id === positId);
-    res.json({ message: 'Posit actualizado', posit: updatedPosit });
+    res.json({ message: 'Posit actualizado y reordenado', posit });
 
   } catch (error) {
-    res.status(500).json({ error: 'Error interno' });
+    console.error(error); // Para que veas errores en la terminal negra si fallase algo
+    res.status(500).json({ error: 'Error actualizando posit' });
   }
-  
 };
 // 3. Obtener UN tablero específico (Para cuando entras en él)
 export const getBoardById = async (req: Request, res: Response) => {

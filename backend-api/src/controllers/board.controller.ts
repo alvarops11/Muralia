@@ -2,17 +2,30 @@
 
 import { Request, Response } from 'express';
 import Board from '../models/Board';
-import { createBoardSchema } from '../types/validator'; // Asegúrate de haber creado este archivo en el paso anterior
 import { generateId } from '../utils/idGenerator';
-import { createPositSchema, updatePositSchema } from '../types/validator';
-import User from '../models/User'; // Necesitamos importar el modelo de Usuario también
+import User from '../models/User'; 
 import { 
-  inviteUserSchema // <--- ¡AÑADE ESTO!
+  createBoardSchema, 
+  createPositSchema, 
+  updatePositSchema, 
+  inviteUserSchema, 
+  updateBoardSchema, 
+  addCommentSchema 
 } from '../types/validator';
-import { 
-  updateBoardSchema, // <--- NUEVO
-  addCommentSchema   // <--- NUEVO
-} from '../types/validator';
+
+// --- HELPER PARA SOCKETS (NUEVO) ---
+// Función auxiliar para no repetir código. Emite el evento a la sala del tablero.
+const emitirActualizacion = (req: Request, boardId: string, accion: string) => {
+  const io = req.app.get('socketio');
+  if (io) {
+    // Enviamos un evento 'tablero_actualizado' a todos en la sala 'boardId'
+    io.to(boardId).emit('tablero_actualizado', { 
+      accion, 
+      autor: req.currentUser?.email 
+    });
+  }
+};
+// -----------------------------------
 
 export const createBoard = async (req: Request, res: Response) => {
   try {
@@ -96,13 +109,15 @@ export const addPosit = async (req: Request, res: Response) => {
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
 
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'addPosit');
+
     res.status(201).json({ message: 'Posit añadido', posit: newPosit });
   } catch (error: any) {
     res.status(500).json({ error: error.errors || 'Error añadiendo posit' });
   }
 };
 
-// 2. Editar/Mover Posit (Solo Orden)
 // 2. Editar/Mover un Posit (CON REORDENAMIENTO INTELIGENTE)
 export const updatePosit = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
@@ -111,7 +126,7 @@ export const updatePosit = async (req: Request, res: Response) => {
   try {
     const dataToUpdate = updatePositSchema.parse(req.body);
 
-    // 1. Buscamos el tablero completo (No usamos findOneAndUpdate porque necesitamos manipular el array)
+    // 1. Buscamos el tablero completo
     const board = await Board.findOne({ 
       _id: boardId, 
       'participantes.usuario_id': user._id 
@@ -137,9 +152,8 @@ export const updatePosit = async (req: Request, res: Response) => {
         board.markModified('posits'); 
     } 
     
-    // B) Si cambiamos el ORDEN (Aquí está la magia ✨)
+    // B) Si cambiamos el ORDEN (Drag & Drop)
     else {
-        // Actualizamos los datos básicos si vienen
         if (dataToUpdate.titulo) posit.titulo = dataToUpdate.titulo;
         if (dataToUpdate.contenido) posit.contenido = dataToUpdate.contenido;
         if (dataToUpdate.color) posit.color = dataToUpdate.color;
@@ -147,20 +161,18 @@ export const updatePosit = async (req: Request, res: Response) => {
         // 1. Sacamos el posit de su lugar actual
         board.posits.splice(positIndex, 1);
 
-        // 2. Ordenamos el resto de posits para asegurar que están limpios (0, 1, 2...)
-        // (Esto evita huecos raros si se borraron notas antes)
+        // 2. Ordenamos el resto
         board.posits.sort((a, b) => (a.posicion.orden || 0) - (b.posicion.orden || 0));
 
         // 3. Calculamos dónde meterlo
-        // Si el usuario pide orden 100 pero solo hay 3 notas, lo ponemos en la 3.
         let nuevoIndice = dataToUpdate.orden;
         if (nuevoIndice < 0) nuevoIndice = 0;
         if (nuevoIndice > board.posits.length) nuevoIndice = board.posits.length;
 
-        // 4. Lo insertamos en la nueva posición (haciendo hueco)
+        // 4. Lo insertamos en la nueva posición
         board.posits.splice(nuevoIndice, 0, posit);
 
-        // 5. RE-NUMERAMOS TODO (0, 1, 2, 3...) para garantizar unicidad
+        // 5. RE-NUMERAMOS TODO
         board.posits.forEach((p, index) => {
             p.posicion.orden = index;
         });
@@ -168,17 +180,21 @@ export const updatePosit = async (req: Request, res: Response) => {
         board.markModified('posits');
     }
 
-    // Guardamos todos los cambios de golpe
+    // Guardamos todos los cambios
     await board.save();
+
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'updatePosit');
 
     res.json({ message: 'Posit actualizado y reordenado', posit });
 
   } catch (error) {
-    console.error(error); // Para que veas errores en la terminal negra si fallase algo
+    console.error(error); 
     res.status(500).json({ error: 'Error actualizando posit' });
   }
 };
-// 3. Obtener UN tablero específico (Para cuando entras en él)
+
+// 3. Obtener UN tablero específico
 export const getBoardById = async (req: Request, res: Response) => {
   const { boardId } = req.params;
   const user = req.currentUser!;
@@ -209,7 +225,6 @@ export const deletePosit = async (req: Request, res: Response) => {
         'participantes.usuario_id': user._id 
       },
       { 
-        // $pull saca un elemento del array que cumpla la condición
         $pull: { posits: { posit_id: positId } } 
       },
       { new: true }
@@ -217,30 +232,31 @@ export const deletePosit = async (req: Request, res: Response) => {
 
     if (!board) return res.status(404).json({ error: 'No se pudo borrar (Tablero no encontrado)' });
 
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'deletePosit');
+
     res.json({ message: 'Posit eliminado correctamente' });
   } catch (error) {
     res.status(500).json({ error: 'Error eliminando posit' });
   }
 };
-// 5. Invitar usuario (Añadir participante)
+
+// 5. Invitar usuario
 export const inviteUser = async (req: Request, res: Response) => {
   const { boardId } = req.params;
-  const user = req.currentUser!; // Tú (el que invita)
+  const user = req.currentUser!; // Tú
 
   try {
     // 1. Validar email y permiso
     const { email, permiso } = inviteUserSchema.parse(req.body);
 
-    // 2. Buscar si el usuario invitado existe en NUESTRA base de datos
+    // 2. Buscar si el usuario invitado existe
     const targetUser = await User.findOne({ email });
     if (!targetUser) {
       return res.status(404).json({ error: 'El usuario no está registrado en la App' });
     }
 
     // 3. Añadir al tablero CON SEGURIDAD
-    // Buscamos el tablero donde:
-    // a) El ID coincide
-    // b) TÚ (req.currentUser) estás en participantes Y tienes permiso 'admin'
     const board = await Board.findOneAndUpdate(
       { 
         _id: boardId,
@@ -249,7 +265,6 @@ export const inviteUser = async (req: Request, res: Response) => {
         }
       },
       {
-        // $addToSet añade solo si no existe ya (evita duplicados)
         $addToSet: {
           participantes: {
             usuario_id: targetUser._id,
@@ -267,6 +282,9 @@ export const inviteUser = async (req: Request, res: Response) => {
       });
     }
 
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'inviteUser');
+
     res.json({ 
       message: `Usuario ${email} invitado correctamente`, 
       participantes: board.participantes 
@@ -277,13 +295,13 @@ export const inviteUser = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error invitando usuario' });
   }
 };
-// 6. Añadir Comentario (VALIDADO)
+
+// 6. Añadir Comentario
 export const addComment = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
   const user = req.currentUser!;
 
   try {
-    // Usamos Zod para validar y limpiar el body
     const { contenido } = addCommentSchema.parse(req.body);
 
     const board = await Board.findOneAndUpdate(
@@ -292,7 +310,7 @@ export const addComment = async (req: Request, res: Response) => {
         $push: {
           'posits.$.comentarios': {
             usuario_id: user._id,
-            contenido, // Ya sabemos que es string y no está vacío
+            contenido, 
             fecha: new Date()
           }
         }
@@ -301,6 +319,10 @@ export const addComment = async (req: Request, res: Response) => {
     );
 
     if (!board) return res.status(404).json({ error: 'No se pudo comentar' });
+    
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'addComment');
+
     res.json({ message: 'Comentario añadido', board });
 
   } catch (error: any) {
@@ -309,26 +331,28 @@ export const addComment = async (req: Request, res: Response) => {
   }
 };
 
-// 7. Editar Tablero (VALIDADO)
+// 7. Editar Tablero
 export const updateBoard = async (req: Request, res: Response) => {
   const { boardId } = req.params;
   const user = req.currentUser!;
 
   try {
-    // Zod valida que si envían color, sea Hex, etc.
     const dataToUpdate = updateBoardSchema.parse(req.body);
 
-    // Solo permitimos editar si eres ADMIN
     const board = await Board.findOneAndUpdate(
       { 
         _id: boardId, 
         participantes: { $elemMatch: { usuario_id: user._id, permiso: 'admin' } }
       },
-      { $set: dataToUpdate }, // Pasamos el objeto limpio de Zod directamente
+      { $set: dataToUpdate }, 
       { new: true }
     );
 
     if (!board) return res.status(403).json({ error: 'No tienes permisos o tablero no existe' });
+    
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'updateBoard');
+
     res.json(board);
 
   } catch (error: any) {
@@ -343,7 +367,6 @@ export const deleteBoard = async (req: Request, res: Response) => {
   const user = req.currentUser!;
 
   try {
-    // Solo Admin puede borrar
     const result = await Board.deleteOne({
       _id: boardId,
       participantes: { $elemMatch: { usuario_id: user._id, permiso: 'admin' } }
@@ -351,6 +374,9 @@ export const deleteBoard = async (req: Request, res: Response) => {
 
     if (result.deletedCount === 0) return res.status(403).json({ error: 'No se pudo borrar (Permisos o no existe)' });
     
+    // 🔥 SOCKET (Para avisar a otros que se cierra)
+    emitirActualizacion(req, boardId, 'deleteBoard');
+
     res.json({ message: 'Tablero eliminado permanentemente' });
   } catch (error) {
     res.status(500).json({ error: 'Error eliminando tablero' });
@@ -359,23 +385,23 @@ export const deleteBoard = async (req: Request, res: Response) => {
 
 // 9. Eliminar Participante (Expulsar o Salirse)
 export const removeParticipant = async (req: Request, res: Response) => {
-  const { boardId, userIdToRemove } = req.params; // ID del usuario a borrar
+  const { boardId, userIdToRemove } = req.params;
   const user = req.currentUser!;
 
   try {
-    // Lógica de permisos:
-    // - Si te borras a ti mismo -> OK (Salir del tablero)
-    // - Si borras a otro -> Debes ser ADMIN del tablero
-    
-    // Primero comprobamos si es "salir" (auto-eliminación)
+    // Si te borras a ti mismo
     if (userIdToRemove === user._id) {
        await Board.findByIdAndUpdate(boardId, {
          $pull: { participantes: { usuario_id: user._id } }
        });
+       
+       // 🔥 SOCKET (Avisar que salí)
+       emitirActualizacion(req, boardId, 'removeParticipant');
+       
        return res.json({ message: 'Has salido del tablero' });
     }
 
-    // Si es expulsar a otro, verificamos que tú seas admin
+    // Si es expulsar a otro
     const board = await Board.findOneAndUpdate(
       { 
         _id: boardId, 
@@ -388,6 +414,9 @@ export const removeParticipant = async (req: Request, res: Response) => {
     );
 
     if (!board) return res.status(403).json({ error: 'No tienes permisos para expulsar o tablero no existe' });
+
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'removeParticipant');
 
     res.json({ message: 'Participante eliminado', participantes: board.participantes });
   } catch (error) {
@@ -404,12 +433,9 @@ export const deleteComment = async (req: Request, res: Response) => {
     const board = await Board.findOneAndUpdate(
       { _id: boardId, 'posits.posit_id': positId },
       {
-        // Borramos el comentario si:
-        // a) El ID coincide Y
-        // b) Lo escribió el usuario que hace la petición (seguridad)
         $pull: { 
           'posits.$.comentarios': { 
-            _id: commentId, // Mongo genera _id automáticos para subdocumentos si no se desactiva
+            _id: commentId, 
             usuario_id: user._id 
           } 
         }
@@ -418,6 +444,10 @@ export const deleteComment = async (req: Request, res: Response) => {
     );
 
     if (!board) return res.status(404).json({ error: 'Comentario no encontrado o no eres el autor' });
+    
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'deleteComment');
+
     res.json({ message: 'Comentario eliminado' });
   } catch (error) {
     res.status(500).json({ error: 'Error eliminando comentario' });

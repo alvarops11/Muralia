@@ -1,8 +1,11 @@
-import { Component, Input, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, Input, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ApiService } from '../../api.service';
 import { RouterLink, ActivatedRoute } from '@angular/router';
-import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-drop';
+import { DragDropModule, CdkDragDrop, CdkDragMove, moveItemInArray } from '@angular/cdk/drag-drop';
+import { WebsocketService } from '../../../services/websocket.service';
+import { Subscription, Subject } from 'rxjs';
+import { throttleTime } from 'rxjs/operators';
 
 @Component({
   selector: 'app-board-detail',
@@ -11,10 +14,21 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
   template: `
     <div class="board-layout fade-in">
       
+      <div class="ghost-layer">
+        <div *ngFor="let ghost of ghosts | keyvalue" 
+             class="ghost-posit"
+             [style.transform]="'translate3d(' + ghost.value.x + 'px, ' + ghost.value.y + 'px, 0)'"
+             [style.background-color]="ghost.value.color">
+          <div class="ghost-user-badge">👤 {{ ghost.value.usuario || '?' }}</div>
+          <strong>{{ ghost.value.titulo }}</strong>
+        </div>
+      </div>
+
       <div *ngIf="cargando" class="loading-overlay"><div class="spinner"></div><p>Sincronizando...</p></div>
+      
       <div *ngIf="error" class="error-banner">❌ {{ error }} <a routerLink="/boards" class="error-link">Salir</a></div>
 
-      <div *ngIf="board && !cargando" class="board-wrapper">
+      <div *ngIf="board" class="board-wrapper"> 
         
         <aside class="sidebar">
           <a routerLink="/boards" class="back-link">← Mis Tableros</a>
@@ -57,9 +71,10 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
             <div *ngFor="let posit of board.posits" 
                  class="posit-card"
                  cdkDrag 
-                 [style.background-color]="posit.color || '#fef3c7'">
-              
-              <div class="custom-placeholder" *cdkDragPlaceholder></div>
+                 (cdkDragMoved)="alMoverDrag($event, posit)"
+                 (cdkDragEnded)="alSoltarDrag(posit)"
+                 [style.background-color]="posit.color || '#fef3c7'"
+                 [class.being-moved-remote]="ghosts[posit.posit_id]"> <div class="custom-placeholder" *cdkDragPlaceholder></div>
 
               <div class="posit-top-bar">
                 <span class="drag-handle" cdkDragHandle>⣿</span>
@@ -85,7 +100,30 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
     </div>
   `,
   styles: [`
-    /* ESTILOS (Los mismos que antes) */
+    /* --- ESTILOS DE GHOSTS (NUEVO) --- */
+    .ghost-layer { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; pointer-events: none; z-index: 9999; overflow: hidden; }
+    
+    .ghost-posit {
+      position: absolute; top:0; left:0;
+      width: 280px; height: 200px; padding: 20px;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+      opacity: 0.85; border: 2px dashed #4f46e5;
+      border-radius: 4px; display: flex; flex-direction: column;
+      will-change: transform; 
+      background: white; /* Fallback */
+    }
+    
+    .ghost-user-badge {
+      position: absolute; top: -12px; right: -10px;
+      background: #4f46e5; color: white; padding: 4px 10px;
+      border-radius: 12px; font-size: 0.8rem; font-weight: bold;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+
+    /* Clase para ocultar el posit original si alguien más lo está moviendo */
+    .being-moved-remote { opacity: 0.3; filter: grayscale(1); transition: opacity 0.3s; }
+
+    /* --- ESTILOS ORIGINALES --- */
     .board-layout { height: 100vh; overflow: hidden; display: flex; font-family: 'Segoe UI', sans-serif; }
     .board-wrapper { display: flex; width: 100%; }
     .fade-in { animation: fadeIn 0.3s ease-out; }
@@ -126,8 +164,6 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
     .comment-item { background: white; padding: 6px 10px; border-radius: 6px; font-size: 0.85rem; box-shadow: 0 1px 2px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
     .delete-comment { color: #ef4444; font-weight: bold; cursor: pointer; padding: 0 5px; }
     .add-comment-link { background: none; border: none; color: #4f46e5; font-size: 0.8rem; font-weight: 600; cursor: pointer; text-align: left; padding: 0; margin-top: 5px; }
-
-    /* DRAG & DROP STYLES */
     .drag-handle { cursor: grab; font-size: 1.2rem; color: #666; margin-right: 10px; }
     .drag-handle:active { cursor: grabbing; }
     .cdk-drag-preview { box-shadow: 0 20px 40px rgba(0,0,0,0.3); border-radius: 4px; opacity: 0.9; transform: rotate(3deg); }
@@ -136,42 +172,152 @@ import { DragDropModule, CdkDragDrop, moveItemInArray } from '@angular/cdk/drag-
     .posits-grid.cdk-drop-list-dragging .posit-card:not(.cdk-drag-placeholder) { transition: transform 250ms cubic-bezier(0, 0, 0.2, 1); }
   `]
 })
-export class BoardDetailComponent implements OnInit {
+export class BoardDetailComponent implements OnInit, OnDestroy {
   @Input() id?: string; 
+  
   api = inject(ApiService);
   cd = inject(ChangeDetectorRef);
   route = inject(ActivatedRoute);
+  wsService = inject(WebsocketService);
 
   board: any = null;
   cargando = false;
   error = '';
+  
+  // -- Control de Sockets y Ghosts --
+  wsSubscription?: Subscription;
+  private subs: Subscription[] = [];
+  
+  // Diccionario para guardar los "fantasmas" (posits movidos por otros)
+  ghosts: { [key: string]: any } = {}; 
+  
+  // Subject para controlar la emisión de eventos de drag (Throttling)
+  private dragSubject = new Subject<any>();
 
   ngOnInit() {
     const idUrl = this.route.snapshot.paramMap.get('id');
     const finalId = this.id || idUrl;
-    if (finalId) { this.id = finalId; this.cargar(); } 
-    else { this.error = "No se ha encontrado ID"; this.cd.detectChanges(); }
+    
+    if (finalId) { 
+      this.id = finalId; 
+      
+      // 1. Carga inicial
+      this.cargar();
+
+      // 2. Unirse a la sala de Socket.io
+      this.wsService.joinBoard(this.id);
+      
+      // 3. Suscribirse a cambios en DB (Sync)
+      this.subs.push(
+        this.wsService.onUpdate().subscribe((data) => {
+          console.log('🔄 Update DB:', data);
+          this.cargar(true); // Recarga silenciosa
+        })
+      );
+
+      // 4. Suscribirse a movimientos de otros (Ghosts)
+      this.subs.push(
+        this.wsService.onDragMove().subscribe((data) => {
+          // Buscamos el original para copiar color/título
+          const original = this.board?.posits.find((p: any) => p.posit_id === data.positId);
+          if (original) {
+            this.ghosts[data.positId] = { 
+              x: data.x, 
+              y: data.y, 
+              usuario: data.usuario,
+              color: original.color,
+              titulo: original.titulo
+            };
+            this.cd.detectChanges();
+          }
+        })
+      );
+
+      // 5. Borrar fantasma cuando el otro usuario suelta
+      this.subs.push(
+        this.wsService.onDragStop().subscribe((data) => {
+          delete this.ghosts[data.positId];
+          this.cd.detectChanges();
+        })
+      );
+
+      // 6. Configurar Throttling para mis movimientos (máx 1 envío cada 30ms)
+      this.subs.push(
+        this.dragSubject.pipe(throttleTime(30)).subscribe((pos) => {
+           // 'Yo' es un placeholder. Lo ideal es usar tu AuthService para poner tu nombre real
+           this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, 'Yo'); 
+        })
+      );
+
+    } else { 
+      this.error = "No se ha encontrado ID"; 
+      this.cd.detectChanges(); 
+    }
   }
 
-  cargar() {
+  ngOnDestroy() {
+    if (this.id) {
+      this.wsService.leaveBoard(this.id);
+    }
+    // Desuscribirse de todo para evitar memory leaks
+    this.subs.forEach(s => s.unsubscribe());
+    this.wsSubscription?.unsubscribe();
+  }
+
+  cargar(silent = false) {
     if(!this.id) return;
-    this.cargando = true;
-    this.cd.detectChanges(); 
+    
+    if (!silent) {
+      this.cargando = true;
+      this.cd.detectChanges(); 
+    }
+
     this.api.getBoard(this.id).subscribe({
       next: (data) => { 
         data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
         this.board = data; 
+        
         this.cargando = false; 
         this.cd.detectChanges(); 
       },
-      error: (err) => { this.error = "Error cargando"; this.cargando = false; this.cd.detectChanges(); }
+      error: (err) => { 
+        if (!silent) {
+           this.error = "Error cargando"; 
+           this.cargando = false; 
+        }
+        this.cd.detectChanges(); 
+      }
     });
   }
 
+  // --- EVENTOS DRAG LOCALES ---
+
+  // Se dispara mientras arrastro (Angular CDK)
+  alMoverDrag(event: CdkDragMove, posit: any) {
+    // Obtenemos coordenadas absolutas del ratón
+    const { x, y } = event.pointerPosition;
+    // Emitimos al Subject (que controla la frecuencia de envío)
+    this.dragSubject.next({ 
+        positId: posit.posit_id, 
+        x: x - 20, // Ajuste visual para el cursor
+        y: y - 20 
+    }); 
+  }
+
+  // Se dispara al soltar (antes de guardar)
+  alSoltarDrag(posit: any) {
+    if(this.id) this.wsService.emitStopDrag(this.id, posit.posit_id);
+  }
+
+  // Se dispara al completar el drop (Guardar en BD)
   soltar(event: CdkDragDrop<any[]>) {
     moveItemInArray(this.board.posits, event.previousIndex, event.currentIndex);
+    
     const posit = this.board.posits[event.currentIndex];
     const nuevoOrden = event.currentIndex;
+
+    // Aseguramos enviar señal de stop
+    this.alSoltarDrag(posit);
 
     if(this.id) {
       this.api.updatePosit(this.id, posit.posit_id, { orden: nuevoOrden }).subscribe({
@@ -181,6 +327,7 @@ export class BoardDetailComponent implements OnInit {
     }
   }
 
+  // --- Métodos Auxiliares ---
   invitar() { const email = prompt("✉️ Email:"); if(email && this.id) this.api.inviteUser(this.id, email).subscribe(() => this.cargar()); }
   echarlo(uid: string) { if(confirm("🛑 ¿Echar?")) this.api.removeParticipant(this.id!, uid).subscribe(() => this.cargar()); }
   crearPosit() { 

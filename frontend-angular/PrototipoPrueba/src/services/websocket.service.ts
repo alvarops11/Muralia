@@ -7,11 +7,11 @@ import { Observable } from 'rxjs';
 })
 export class WebsocketService {
   private socket: Socket;
-  private readonly URL = 'https://lpn41v3w-3000.uks1.devtunnels.ms/'; 
+  private readonly URL = 'http://localhost:3000/';
 
   constructor() {
     this.socket = io(this.URL, {
-      transports: ['websocket', 'polling'], 
+      transports: ['websocket', 'polling'],
       autoConnect: true
     });
   }
@@ -34,7 +34,7 @@ export class WebsocketService {
   }
 
   // --- MOVIMIENTO EN TIEMPO REAL (Ghosts) ---
-  
+
   // Enviar mis coordenadas
   emitDrag(boardId: string, positId: string, pos: { x: number, y: number }, usuario: string) {
     this.socket.emit('moviendo_posit', { boardId, positId, ...pos, usuario });

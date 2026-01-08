@@ -14,7 +14,7 @@ const httpServer = createServer(app);
 // 2. Inicializamos Socket.io
 const io = new Server(httpServer, {
   cors: {
-    origin: "*", // En producción, pon la URL de tu frontend (ej: http://localhost:4200)
+    origin: "http://localhost:4200", // En producción, pon la URL de tu frontend (ej: http://localhost:4200)
     methods: ["GET", "POST", "PUT", "DELETE"]
   }
 });
@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
   // --- MOVIMIENTO EN TIEMPO REAL (GHOSTS) ---
   // Estos eventos son ligeros y NO tocan la base de datos.
   // Solo rebotan las coordenadas a los otros usuarios.
-  
+
   socket.on('moviendo_posit', (data) => {
     // data = { boardId, positId, x, y, usuario, color, titulo }
     // Enviamos a todos en la sala MENOS al que lo envía (broadcast)

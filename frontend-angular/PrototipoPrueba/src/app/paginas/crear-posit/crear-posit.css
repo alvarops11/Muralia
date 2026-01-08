@@ -1,0 +1,181 @@
+/* --- Configuración General --- */
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #333;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.modal-container {
+    background-color: #E0E0E0;
+    width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    overflow: hidden;
+    border: 1px solid #999;
+}
+
+/* --- Encabezado --- */
+.modal-header {
+    background-color: #5C6BC0;
+    color: white;
+    padding: 15px 25px;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+/* --- Cuerpo --- */
+.modal-body {
+    padding: 25px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-label {
+    font-size: 15px;
+    font-weight: 500;
+    color: #333;
+}
+
+.label-icon {
+    font-size: 14px; /* Un poco más pequeño para el texto del adjunto */
+}
+
+/* Inputs de Texto */
+.form-input, .form-textarea {
+    padding: 12px;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    font-size: 15px;
+    outline: none;
+    font-family: inherit;
+    background-color: white;
+}
+
+.form-textarea {
+    resize: none;
+    height: 100px;
+}
+
+/* --- Selector de Color (Circular) --- */
+.color-picker {
+    display: flex;
+    gap: 15px;
+}
+
+.color-option {
+    cursor: pointer;
+    position: relative;
+}
+
+/* Ocultamos el radio button original */
+.color-option input[type="radio"] {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Creamos los círculos de color */
+.color-circle {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px; /* Bordes redondeados pero cuadrados, como en la imagen */
+    border: 2px solid transparent; /* Borde invisible por defecto */
+    transition: transform 0.2s;
+}
+
+/* Colores Pastel */
+.c-yellow { background-color: #F4FF81; border-color: #c0cb5b; }
+.c-blue   { background-color: #80D8FF; border-color: #4bacd1; }
+.c-pink   { background-color: #F8BBD0; border-color: #c48b9f; }
+.c-green  { background-color: #CCFF90; border-color: #9cbf63; }
+.c-orange { background-color: #FFD180; border-color: #ca9d52; }
+
+/* Efecto al seleccionar (cuando el radio está checked) */
+.color-option input:checked + .color-circle {
+    transform: scale(1.1); /* Crece un poco */
+    box-shadow: 0 0 0 2px #555; /* Anillo exterior para marcar selección */
+}
+
+/* --- Input de Archivo Personalizado --- */
+.file-input-wrapper {
+    background-color: white;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    padding: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    position: relative;
+}
+
+.btn-file-select {
+    background-color: #D6D6D6;
+    border: 1px solid #ccc;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 14px;
+    cursor: pointer;
+    color: #333;
+}
+
+.file-msg {
+    font-size: 14px;
+    color: #333;
+}
+
+/* El input real está ahí pero invisible, cubriendo el botón para que funcione el clic */
+.real-file-input {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* --- Footer --- */
+.modal-footer {
+    padding: 0 25px 25px 25px;
+    display: flex;
+    gap: 20px;
+}
+
+.btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    font-weight: 500;
+    border: none;
+}
+
+.btn-primary {
+    background-color: #5C6BC0;
+    color: white;
+}
+.btn-primary:hover { background-color: #4f5dad; }
+
+.btn-secondary {
+    background-color: white;
+    color: #333;
+    border: 1px solid #aaa;
+}
+.btn-secondary:hover { background-color: #f0f0f0; }

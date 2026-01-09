@@ -1,53 +1,40 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modal Buscar Post-it</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="buscarPost-it.css">
-</head>
-<body>
+<div class="modal-container">
 
-    <div class="modal-container">
-        
-        <div class="modal-header">
-            <span class="header-icon">🔍</span>
-            <h3>Buscar Post-it</h3>
-        </div>
 
-        <div class="modal-body">
-            
-            <div class="search-row">
-                <div class="search-input-wrapper">
-                    <span class="search-icon">🔍</span>
-                    <input type="text" class="search-input" placeholder="Buscar por palabra clave...">
-                </div>
-                <button class="btn-search-action">🔍</button>
-            </div>
-
-            <div class="filters-row">
-                <button class="filter-chip active">Todos</button>
-                <button class="filter-chip">Con archivos</button>
-                <button class="filter-chip">Destacados</button>
-                <button class="filter-chip">Mi contribucción</button>
-            </div>
-
-            <div class="status-box success">
-                <span class="check-icon">✅</span>
-                <span>Se encontraron <strong>5 resultados</strong> para "diseño"</span>
-            </div>
-
-            <div class="result-card">
-                <div class="result-content">
-                    <h4 class="result-title">Post-it 1: Concepto de diseño</h4>
-                    <p class="result-desc">...encontrado en la busqueda.</p>
-                </div>
-                <button class="btn-ver">Ver</button>
-            </div>
-
-        </div>
+    <div class="modal-header">
+        <span class="header-icon">🔍</span>
+        <h3>Buscar Post-it</h3>
     </div>
 
-</body>
-</html>
+    <div class="modal-body">
+
+        <div class="search-row">
+            <div class="search-input-wrapper">
+                <span class="search-icon">🔍</span>
+                <input type="text" class="search-input" placeholder="Buscar por palabra clave...">
+            </div>
+            <button class="btn-search-action">🔍</button>
+        </div>
+
+        <div class="filters-row">
+            <button class="filter-chip active">Todos</button>
+            <button class="filter-chip">Con archivos</button>
+            <button class="filter-chip">Destacados</button>
+            <button class="filter-chip">Mi contribucción</button>
+        </div>
+
+        <div class="status-box success">
+            <span class="check-icon">✅</span>
+            <span>Se encontraron <strong>5 resultados</strong> para "diseño"</span>
+        </div>
+
+        <div class="result-card">
+            <div class="result-content">
+                <h4 class="result-title">Post-it 1: Concepto de diseño</h4>
+                <p class="result-desc">...encontrado en la busqueda.</p>
+            </div>
+            <button class="btn-ver">Ver</button>
+        </div>
+
+    </div>
+</div>

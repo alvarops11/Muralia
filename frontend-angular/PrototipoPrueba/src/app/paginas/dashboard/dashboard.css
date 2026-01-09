@@ -7,7 +7,8 @@
 }
 
 body {
-    background-color: #f8f9fa; /* Fondo casi blanco */
+    background-color: #f8f9fa;
+    /* Fondo casi blanco */
     height: 100vh;
     display: flex;
     flex-direction: column;
@@ -15,14 +16,16 @@ body {
 
 /* --- 1. ENCABEZADO (HEADER) --- */
 .header {
-    background-color: #5570f1; /* Azul índigo de la imagen */
+    background-color: #5570f1;
+    /* Azul índigo de la imagen */
     height: 70px;
     display: flex;
     align-items: center;
-    justify-content: space-between; /* Separa título y nombre a los extremos */
+    justify-content: space-between;
+    /* Separa título y nombre a los extremos */
     padding: 0 30px;
     color: white;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
 .header h1 {
@@ -52,11 +55,14 @@ body {
 
 .search-input {
     width: 100%;
-    padding: 18px 20px 18px 50px; /* Espacio a la izquierda para el icono */
+    padding: 18px 20px 18px 50px;
+    /* Espacio a la izquierda para el icono */
     font-size: 18px;
-    background-color: #e0e0e0; /* Gris claro de la imagen */
+    background-color: #e0e0e0;
+    /* Gris claro de la imagen */
     border: none;
-    border-radius: 12px; /* Bordes redondeados */
+    border-radius: 12px;
+    /* Bordes redondeados */
     color: #555;
     outline: none;
 }
@@ -76,6 +82,7 @@ body {
     border: 2px solid #666;
     border-radius: 50%;
 }
+
 .search-icon::after {
     content: '';
     position: absolute;
@@ -91,13 +98,16 @@ body {
 .cards-grid {
     display: grid;
     /* Crea columnas automáticas de mínimo 250px */
-    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); 
-    gap: 25px; /* Espacio entre tarjetas */
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 25px;
+    /* Espacio entre tarjetas */
 }
 
 .card {
-    background-color: #d9d9d9; /* Gris para las tarjetas vacías */
-    aspect-ratio: 4 / 3; /* Proporción rectangular suave */
+    background-color: #d9d9d9;
+    /* Gris para las tarjetas vacías */
+    aspect-ratio: 4 / 3;
+    /* Proporción rectangular suave */
     border-radius: 16px;
     position: relative;
     transition: transform 0.2s;
@@ -110,7 +120,7 @@ body {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
     border: 1px solid #eee;
 }
 
@@ -127,8 +137,10 @@ body {
     border-radius: 20px;
     font-size: 11px;
     font-weight: 700;
-    background-color: #d1fae5; /* Verde muy claro */
-    color: #059669; /* Verde texto */
+    background-color: #d1fae5;
+    /* Verde muy claro */
+    color: #059669;
+    /* Verde texto */
 }
 
 .card-footer {
@@ -137,7 +149,8 @@ body {
     align-items: center;
     border-top: 1px solid #f3f4f6;
     padding-top: 15px;
-    margin-top: auto; /* Empuja el footer al fondo */
+    margin-top: auto;
+    /* Empuja el footer al fondo */
 }
 
 .project-id {
@@ -159,7 +172,8 @@ body {
     right: 40px;
     width: 60px;
     height: 60px;
-    background-color: #5570f1; /* Mismo azul del header */
+    background-color: #5570f1;
+    /* Mismo azul del header */
     color: white;
     border-radius: 50%;
     display: flex;
@@ -173,4 +187,336 @@ body {
 
 .fab-button:hover {
     transform: scale(1.1);
+}
+
+/* --- 6. ESTADOS DE CARGA Y ERROR --- */
+.loading-state,
+.error-state,
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    color: #6b7280;
+}
+
+.loading-state p {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.error-state p {
+    font-size: 16px;
+    color: #ef4444;
+    margin-bottom: 20px;
+}
+
+.retry-button {
+    padding: 10px 20px;
+    background-color: #5570f1;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+    background-color: #4560e0;
+}
+
+.empty-state p {
+    font-size: 16px;
+}
+
+/* --- 7. INTERACCIONES DE TARJETAS --- */
+.card.active-project:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+}
+
+.delete-icon:hover {
+    color: #ef4444;
+    transform: scale(1.2);
+}
+
+/* Badge público */
+.badge.badge-public {
+    background-color: #dbeafe;
+    color: #1e40af;
+}
+
+.refreshing-mini {
+    position: absolute;
+    top: 90px;
+    right: 40px;
+    font-size: 12px;
+    color: #5570f1;
+    font-weight: 500;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        opacity: 0.6;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0.6;
+    }
+}
+
+/* --- 8. MODAL PERSONALIZADO --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease;
+}
+
+.modal-content {
+    background: white;
+    width: 90%;
+    max-width: 450px;
+    padding: 30px;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+    animation: slideUp 0.3s ease;
+}
+
+.modal-header h2 {
+    font-size: 22px;
+    color: #1f2937;
+    margin-bottom: 15px;
+}
+
+.modal-body p {
+    color: #4b5563;
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.modal-warning {
+    font-size: 14px;
+    color: #ef4444 !important;
+    font-weight: 500;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 15px;
+    margin-top: 25px;
+}
+
+.btn-cancel {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: #f3f4f6;
+    color: #4b5563;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.btn-cancel:hover {
+    background: #e5e7eb;
+}
+
+.btn-delete {
+    flex: 2;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    background: #ef4444;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+}
+
+.btn-delete:hover {
+    background: #dc2626;
+}
+
+.btn-delete:active {
+    transform: scale(0.98);
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* --- FORM STYLES (Create Modal - Strict Reference Match) --- */
+.modal-content {
+    background-color: #E0E0E0;
+    /* Exact light gray from image */
+    border-radius: 12px;
+    border: 3px solid #00B0FF;
+    /* Bright Cyan/Blue outer border */
+    padding: 0;
+    overflow: hidden;
+    max-width: 500px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    font-family: 'Roboto', sans-serif;
+}
+
+.modal-header {
+    background-color: #5C6BC0;
+    /* Periwinkle Blue Header */
+    color: white;
+    padding: 18px 24px;
+    border-bottom: none;
+    text-align: left;
+    display: flex;
+    align-items: center;
+}
+
+.modal-header span {
+    font-size: 18px;
+    font-weight: 500;
+}
+
+.modal-body {
+    padding: 24px 30px;
+    text-align: left;
+    color: #333;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-label {
+    display: block;
+    font-size: 14px;
+    font-weight: 700;
+    color: #333;
+    margin-bottom: 8px;
+}
+
+.form-input,
+.form-textarea {
+    width: 100%;
+    padding: 14px;
+    font-size: 14px;
+    color: #666;
+    background-color: rgba(255, 255, 255, 0.4);
+    /* Transparent white input */
+    border: 1px solid #aaa;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.form-input::placeholder,
+.form-textarea::placeholder {
+    color: #999;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+    outline: none;
+    background-color: #fff;
+    border-color: #5C6BC0;
+}
+
+.form-textarea {
+    resize: none;
+    height: 80px;
+}
+
+.radio-group {
+    display: flex;
+    gap: 40px;
+    margin-top: 10px;
+    justify-content: flex-start;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    font-size: 13px;
+    color: #333;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 8px;
+    transform: scale(1.1);
+    accent-color: #333;
+}
+
+.modal-footer {
+    padding: 0 30px 30px;
+    display: flex;
+    gap: 15px;
+    justify-content: space-between;
+}
+
+.btn-crear {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    background-color: #5C6BC0;
+    /* Match Header */
+    color: white;
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.btn-crear:hover {
+    background-color: #4f5dad;
+}
+
+.btn-cancel {
+    flex: 1;
+    padding: 12px;
+    border: 1px solid #999;
+    border-radius: 8px;
+    background-color: transparent;
+    color: #333;
+    font-weight: 500;
+    font-size: 15px;
+    cursor: pointer;
+}
+
+.btn-cancel:hover {
+    background-color: rgba(0, 0, 0, 0.05);
 }

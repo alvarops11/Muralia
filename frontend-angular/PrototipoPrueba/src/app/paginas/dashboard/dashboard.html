@@ -1,52 +1,114 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Murales - Carlos Basulto</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="dashboard.css">
-</head>
-<body>
+<header class="header">
+    <h1>Murales</h1>
+    <div class="user-name">Carlos Basulto</div>
+</header>
 
-    <header class="header">
-        <h1>Murales</h1>
-        <div class="user-name">Carlos Basulto</div>
-    </header>
+<div class="main-container">
 
-    <div class="main-container">
-        
-        <div class="search-container">
-            <span class="search-icon"></span>
-            <input type="text" class="search-input" placeholder="Buscar Murales...">
-        </div>
-
-        <div class="cards-grid">
-            
-            <div class="card active-project">
-                <div>
-                    <div class="project-title">Proyecto Alpha</div>
-                    <span class="badge">PUBLICO</span>
-                </div>
-                <div class="card-footer">
-                    <span class="project-id">ID: tablero_...</span>
-                    <span class="delete-icon">🗑️</span>
-                </div>
-            </div>
-
-            <div class="card"></div>
-            <div class="card"></div>
-            <div class="card"></div>
-            <div class="card"></div>
-            <div class="card"></div>
-            <div class="card"></div>
-            <div class="card"></div>
-
-        </div>
+    <div class="search-container">
+        <span class="search-icon"></span>
+        <input type="text" class="search-input" placeholder="Buscar Murales..." [(ngModel)]="searchTerm">
     </div>
 
-    <div class="fab-button">+</div>
+    <!-- Loading state (Solo si no hay datos) -->
+    <div *ngIf="loading && boards.length === 0" class="loading-state">
+        <p>⏳ Cargando murales...</p>
+    </div>
 
-</body>
-</html>
+    <!-- Background refreshing indicator -->
+    <div *ngIf="loading && boards.length > 0" class="refreshing-mini">
+        Sincronizando...
+    </div>
+
+    <!-- Error state -->
+    <div *ngIf="error && !loading" class="error-state">
+        <p>❌ {{ error }}</p>
+        <button (click)="loadBoards()" class="retry-button">Reintentar</button>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="!loading && !error && boards.length === 0 && searchTerm === ''" class="empty-state">
+        <p>📋 No tienes murales aún. ¡Crea el primero!</p>
+    </div>
+
+    <!-- No results state -->
+    <div *ngIf="!loading && !error && filteredBoards.length === 0 && searchTerm !== ''" class="empty-state">
+        <p>🔍 No se encontraron murales que coincidan con "{{ searchTerm }}"</p>
+    </div>
+
+    <!-- Boards grid -->
+    <div class="cards-grid" *ngIf="filteredBoards.length > 0">
+        <div *ngFor="let board of filteredBoards" class="card active-project" (click)="navigateToBoard(board._id)">
+            <div>
+                <div class="project-title">{{ board.titulo }}</div>
+                <span class="badge" [class.badge-public]="board.privacidad === 'publico'">
+                    {{ board.privacidad === 'publico' ? 'PÚBLICO' : 'PRIVADO' }}
+                </span>
+            </div>
+            <div class="card-footer">
+                <span class="project-id">ID: {{ board._id.substring(0, 8) }}...</span>
+                <span class="delete-icon" (click)="deleteBoard(board, $event)">🗑️</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="fab-button" (click)="openCreateModal()">+</div>
+
+<!-- Custom Create Modal -->
+<div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <span>+</span>
+            <span>Crear nuevo Mural</span>
+        </div>
+        <div class="modal-body">
+            <div class="form-group">
+                <label for="nombreMural" class="form-label">Nombre del Mural*</label>
+                <input type="text" id="nombreMural" class="form-input" placeholder="Ej: Mi primer Mural."
+                    [(ngModel)]="newBoardTitle">
+            </div>
+
+            <div class="form-group">
+                <label for="descripcionMural" class="form-label">Descripción</label>
+                <textarea id="descripcionMural" class="form-textarea" placeholder="Describe el propósito..."
+                    [(ngModel)]="newBoardDescription"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Privacidad *</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="privacidad" value="privado" [(ngModel)]="newBoardPrivacy">
+                        Privado (Solo tú)
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="privacidad" value="publico" [(ngModel)]="newBoardPrivacy">
+                        Compartido (Con enlace)
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" (click)="closeCreateModal()">Cancelar</button>
+            <button class="btn btn-crear" (click)="confirmCreateBoard()">Crear</button>
+        </div>
+    </div>
+</div>
+
+<!-- Custom Delete Modal -->
+<div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
+    <div class="modal-content" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+            <h2>¿Eliminar mural?</h2>
+        </div>
+        <div class="modal-body">
+            <p>Estás a punto de eliminar <strong>{{ boardToDelete?.titulo }}</strong>.</p>
+            <p class="modal-warning">Esta acción no se puede deshacer y se perderán todos los datos asociados.</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn-cancel" (click)="cancelDelete()">Cancelar</button>
+            <button class="btn-delete" (click)="confirmDelete()">Eliminar para siempre</button>
+        </div>
+    </div>
+</div>

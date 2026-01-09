@@ -7,6 +7,10 @@ import boardRoutes from './routes/board.routes';
 const app = express();
 
 // --- Middlewares Globales ---
+app.use((req, res, next) => {
+  console.log(`[Request] ${req.method} ${req.url}`);
+  next();
+});
 app.use(helmet()); // Seguridad HTTP
 app.use(cors());   // Permitir peticiones externas
 app.use(express.json()); // Entender JSON en el body

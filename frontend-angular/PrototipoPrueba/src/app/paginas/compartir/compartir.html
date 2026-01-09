@@ -1,66 +1,53 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modal Compartir Mural</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="compartirMural.css">
-</head>
-<body>
+<div class="modal-container">
 
-    <div class="modal-container">
-        
-        <div class="modal-header">
-            <span class="header-icon">🔗</span>
-            <h3>Compartir Mural</h3>
-        </div>
 
-        <div class="modal-body">
-            
-            <div class="form-group">
-                <label class="form-label">Enlace de compartición</label>
-                <div class="link-row">
-                    <input type="text" class="form-input" value="mural.com/shared/a7k9q2m" readonly>
-                    <button class="btn-copy">
-                        <span class="copy-icon">📋</span>
-                        Copiar
-                    </button>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Usuarios compartidos</label>
-                <div class="users-list">
-                    
-                    <div class="user-item">
-                        <span class="user-avatar">👤</span>
-                        <div class="user-info">
-                            <span class="user-email">maria@email.com</span>
-                            <span class="user-role">Editor</span>
-                        </div>
-                    </div>
-
-                    <div class="user-item">
-                        <span class="user-avatar">👤</span>
-                        <div class="user-info">
-                            <span class="user-email">carlos@email.com</span>
-                            <span class="user-role">Lector</span>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Añadir nuevo usuario</label>
-                <input type="text" class="form-input" placeholder="Email del usuario">
-            </div>
-
-            <button class="btn-full-width">Añadir Usuario</button>
-
-        </div>
+    <div class="modal-header">
+        <span class="header-icon">🔗</span>
+        <h3>Compartir Mural</h3>
     </div>
 
-</body>
-</html>
+    <div class="modal-body">
+
+        <div class="form-group">
+            <label class="form-label">Enlace de compartición</label>
+            <div class="link-row">
+                <input type="text" class="form-input" value="mural.com/shared/a7k9q2m" readonly>
+                <button class="btn-copy">
+                    <span class="copy-icon">📋</span>
+                    Copiar
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Usuarios compartidos</label>
+            <div class="users-list">
+
+                <div class="user-item">
+                    <span class="user-avatar">👤</span>
+                    <div class="user-info">
+                        <span class="user-email">maria@email.com</span>
+                        <span class="user-role">Editor</span>
+                    </div>
+                </div>
+
+                <div class="user-item">
+                    <span class="user-avatar">👤</span>
+                    <div class="user-info">
+                        <span class="user-email">carlos@email.com</span>
+                        <span class="user-role">Lector</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Añadir nuevo usuario</label>
+            <input type="text" class="form-input" placeholder="Email del usuario">
+        </div>
+
+        <button class="btn-full-width">Añadir Usuario</button>
+
+    </div>
+</div>

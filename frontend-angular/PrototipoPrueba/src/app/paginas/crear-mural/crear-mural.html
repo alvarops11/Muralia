@@ -1,54 +1,41 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modal Crear Nuevo Mural</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="crearMural.css">
-</head>
-<body>
+<div class="modal-container">
 
-    <div class="modal-container">
-        
-        <div class="modal-header">
-            <span>+</span> Crear nuevo Mural
+
+    <div class="modal-header">
+        <span>+</span> Crear nuevo Mural
+    </div>
+
+    <div class="modal-body">
+
+        <div class="form-group">
+            <label for="nombreMural" class="form-label">Nombre del Mural*</label>
+            <input type="text" id="nombreMural" class="form-input" placeholder="Ej: Mi primer Mural.">
         </div>
 
-        <div class="modal-body">
-            
-            <div class="form-group">
-                <label for="nombreMural" class="form-label">Nombre del Mural*</label>
-                <input type="text" id="nombreMural" class="form-input" placeholder="Ej: Mi primer Mural.">
-            </div>
-
-            <div class="form-group">
-                <label for="descripcionMural" class="form-label">Descripción</label>
-                <textarea id="descripcionMural" class="form-textarea" placeholder="Describe el propósito..."></textarea>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Privacidad *</label>
-                <div class="radio-group">
-                    <label class="radio-option">
-                        <input type="radio" name="privacidad" value="privado" checked>
-                        Privado (Solo tú)
-                    </label>
-                    <label class="radio-option">
-                        <input type="radio" name="privacidad" value="compartido">
-                        Compartido (Con enlace)
-                    </label>
-                </div>
-            </div>
-
+        <div class="form-group">
+            <label for="descripcionMural" class="form-label">Descripción</label>
+            <textarea id="descripcionMural" class="form-textarea" placeholder="Describe el propósito..."></textarea>
         </div>
 
-        <div class="modal-footer">
-            <button class="btn btn-crear">Crear</button>
-            <button class="btn btn-cancelar">Cancelar</button>
+        <div class="form-group">
+            <label class="form-label">Privacidad *</label>
+            <div class="radio-group">
+                <label class="radio-option">
+                    <input type="radio" name="privacidad" value="privado" checked>
+                    Privado (Solo tú)
+                </label>
+                <label class="radio-option">
+                    <input type="radio" name="privacidad" value="compartido">
+                    Compartido (Con enlace)
+                </label>
+            </div>
         </div>
 
     </div>
 
-</body>
-</html>
+    <div class="modal-footer">
+        <button class="btn btn-crear">Crear</button>
+        <button class="btn btn-cancelar">Cancelar</button>
+    </div>
+
+</div>

@@ -1,5 +1,6 @@
 import { Component, Input, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../api.service';
 import { RouterLink, ActivatedRoute } from '@angular/router';
 import { DragDropModule, CdkDragDrop, CdkDragMove, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -10,8 +11,48 @@ import { throttleTime } from 'rxjs/operators';
 @Component({
   selector: 'app-board-detail',
   standalone: true,
-  imports: [CommonModule, RouterLink, DragDropModule],
+  imports: [CommonModule, RouterLink, DragDropModule, FormsModule],
   template: `
+    <!-- Modal Overlay -->
+    <div *ngIf="mostrarModal" class="modal-overlay" (click)="cerrarModal()">
+      <div class="modal-popup" (click)="$event.stopPropagation()">
+        <div class="modal-header">
+          <h2>✏️ Nuevo Post-it</h2>
+        </div>
+        
+        <div class="modal-body">
+          <label class="form-label">Contenido *</label>
+          <textarea 
+            [(ngModel)]="nuevoPosit.contenido" 
+            class="form-textarea"
+            placeholder="Escribe tu idea, nota o comentario..."
+            rows="6"
+          ></textarea>
+          
+          <label class="form-label">Color del Post-it</label>
+          <div class="color-picker">
+            <div 
+              *ngFor="let c of coloresDisponibles" 
+              class="color-option"
+              [class.selected]="nuevoPosit.color === c"
+              [style.background-color]="c"
+              (click)="seleccionarColor(c)"
+            ></div>
+          </div>
+          
+          <label class="form-label attachment-label">
+            <span>🔗 Adjuntar archivo</span>
+          </label>
+          <button class="file-button">Seleccionar archivo</button>
+        </div>
+        
+        <div class="modal-footer">
+          <button class="btn-save" (click)="guardarPosit()">Guardar</button>
+          <button class="btn-cancel" (click)="cerrarModal()">Cancelar</button>
+        </div>
+      </div>
+    </div>
+
     <div class="board-layout fade-in">
       
       <div class="ghost-layer">
@@ -170,11 +211,33 @@ import { throttleTime } from 'rxjs/operators';
     .custom-placeholder { background: rgba(0,0,0,0.05); border: 2px dashed rgba(0,0,0,0.2); min-height: 200px; border-radius: 4px; transition: transform 250ms cubic-bezier(0, 0, 0.2, 1); }
     .cdk-drag-animating { transition: transform 250ms cubic-bezier(0, 0, 0.2, 1); }
     .posits-grid.cdk-drop-list-dragging .posit-card:not(.cdk-drag-placeholder) { transition: transform 250ms cubic-bezier(0, 0, 0.2, 1); }
+    
+    /* --- MODAL STYLES --- */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 1000; animation: fadeIn 0.2s; }
+    .modal-popup { background: white; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); overflow: hidden; }
+    .modal-header { background: #5B6ED9; color: white; padding: 20px 30px; }
+    .modal-header h2 { margin: 0; font-size: 1.5rem; font-weight: 600; }
+    .modal-body { padding: 30px; }
+    .form-label { display: block; font-size: 1rem; font-weight: 500; color: #111; margin-bottom: 10px; }
+    .attachment-label { margin-top: 20px; }
+    .form-textarea { width: 100%; padding: 15px; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.95rem; font-family: inherit; resize: vertical; background: #f9fafb; }
+    .form-textarea::placeholder { color: #9ca3af; }
+    .color-picker { display: flex; gap: 15px; margin-bottom: 20px; }
+    .color-option { width: 50px; height: 50px; border-radius: 8px; cursor: pointer; border: 3px solid transparent; transition: all 0.2s; }
+    .color-option:hover { transform: scale(1.1); }
+    .color-option.selected { border-color: #4f46e5; box-shadow: 0 0 0 2px white, 0 0 0 4px #4f46e5; }
+    .file-button { width: 100%; padding: 12px; background: #f3f4f6; border: 1px solid #d1d5db; border-radius: 6px; font-size: 0.9rem; color: #6b7280; cursor: pointer; text-align: left; }
+    .file-button:hover { background: #e5e7eb; }
+    .modal-footer { padding: 20px 30px; display: flex; gap: 15px; }
+    .btn-save { flex: 1; padding: 12px; background: #5B6ED9; color: white; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
+    .btn-save:hover { background: #4c5ec4; }
+    .btn-cancel { flex: 1; padding: 12px; background: #e5e7eb; color: #374151; border: none; border-radius: 6px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: background 0.2s; }
+    .btn-cancel:hover { background: #d1d5db; }
   `]
 })
 export class BoardDetailComponent implements OnInit, OnDestroy {
-  @Input() id?: string; 
-  
+  @Input() id?: string;
+
   api = inject(ApiService);
   cd = inject(ChangeDetectorRef);
   route = inject(ActivatedRoute);
@@ -183,30 +246,35 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   board: any = null;
   cargando = false;
   error = '';
-  
+
+  // Modal state
+  mostrarModal = false;
+  nuevoPosit = { contenido: '', color: '#fef3c7' };
+  coloresDisponibles = ['#fef3c7', '#a5f3fc', '#fbcfe8', '#bbf7d0', '#fed7aa'];
+
   // -- Control de Sockets y Ghosts --
   wsSubscription?: Subscription;
   private subs: Subscription[] = [];
-  
+
   // Diccionario para guardar los "fantasmas" (posits movidos por otros)
-  ghosts: { [key: string]: any } = {}; 
-  
+  ghosts: { [key: string]: any } = {};
+
   // Subject para controlar la emisión de eventos de drag (Throttling)
   private dragSubject = new Subject<any>();
 
   ngOnInit() {
     const idUrl = this.route.snapshot.paramMap.get('id');
     const finalId = this.id || idUrl;
-    
-    if (finalId) { 
-      this.id = finalId; 
-      
+
+    if (finalId) {
+      this.id = finalId;
+
       // 1. Carga inicial
       this.cargar();
 
       // 2. Unirse a la sala de Socket.io
       this.wsService.joinBoard(this.id);
-      
+
       // 3. Suscribirse a cambios en DB (Sync)
       this.subs.push(
         this.wsService.onUpdate().subscribe((data) => {
@@ -221,9 +289,9 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
           // Buscamos el original para copiar color/título
           const original = this.board?.posits.find((p: any) => p.posit_id === data.positId);
           if (original) {
-            this.ghosts[data.positId] = { 
-              x: data.x, 
-              y: data.y, 
+            this.ghosts[data.positId] = {
+              x: data.x,
+              y: data.y,
               usuario: data.usuario,
               color: original.color,
               titulo: original.titulo
@@ -244,14 +312,14 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
       // 6. Configurar Throttling para mis movimientos (máx 1 envío cada 30ms)
       this.subs.push(
         this.dragSubject.pipe(throttleTime(30)).subscribe((pos) => {
-           // 'Yo' es un placeholder. Lo ideal es usar tu AuthService para poner tu nombre real
-           this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, 'Yo'); 
+          // 'Yo' es un placeholder. Lo ideal es usar tu AuthService para poner tu nombre real
+          this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, 'Yo');
         })
       );
 
-    } else { 
-      this.error = "No se ha encontrado ID"; 
-      this.cd.detectChanges(); 
+    } else {
+      this.error = "No se ha encontrado ID";
+      this.cd.detectChanges();
     }
   }
 
@@ -265,27 +333,27 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   }
 
   cargar(silent = false) {
-    if(!this.id) return;
-    
+    if (!this.id) return;
+
     if (!silent) {
       this.cargando = true;
-      this.cd.detectChanges(); 
+      this.cd.detectChanges();
     }
 
     this.api.getBoard(this.id).subscribe({
-      next: (data) => { 
+      next: (data) => {
         data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
-        this.board = data; 
-        
-        this.cargando = false; 
-        this.cd.detectChanges(); 
+        this.board = data;
+
+        this.cargando = false;
+        this.cd.detectChanges();
       },
-      error: (err) => { 
+      error: (err) => {
         if (!silent) {
-           this.error = "Error cargando"; 
-           this.cargando = false; 
+          this.error = "Error cargando";
+          this.cargando = false;
         }
-        this.cd.detectChanges(); 
+        this.cd.detectChanges();
       }
     });
   }
@@ -297,29 +365,29 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
     // Obtenemos coordenadas absolutas del ratón
     const { x, y } = event.pointerPosition;
     // Emitimos al Subject (que controla la frecuencia de envío)
-    this.dragSubject.next({ 
-        positId: posit.posit_id, 
-        x: x - 20, // Ajuste visual para el cursor
-        y: y - 20 
-    }); 
+    this.dragSubject.next({
+      positId: posit.posit_id,
+      x: x - 20, // Ajuste visual para el cursor
+      y: y - 20
+    });
   }
 
   // Se dispara al soltar (antes de guardar)
   alSoltarDrag(posit: any) {
-    if(this.id) this.wsService.emitStopDrag(this.id, posit.posit_id);
+    if (this.id) this.wsService.emitStopDrag(this.id, posit.posit_id);
   }
 
   // Se dispara al completar el drop (Guardar en BD)
   soltar(event: CdkDragDrop<any[]>) {
     moveItemInArray(this.board.posits, event.previousIndex, event.currentIndex);
-    
+
     const posit = this.board.posits[event.currentIndex];
     const nuevoOrden = event.currentIndex;
 
     // Aseguramos enviar señal de stop
     this.alSoltarDrag(posit);
 
-    if(this.id) {
+    if (this.id) {
       this.api.updatePosit(this.id, posit.posit_id, { orden: nuevoOrden }).subscribe({
         next: () => console.log("Guardado"),
         error: () => { alert("Error guardando"); this.cargar(); }
@@ -328,17 +396,39 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   }
 
   // --- Métodos Auxiliares ---
-  invitar() { const email = prompt("✉️ Email:"); if(email && this.id) this.api.inviteUser(this.id, email).subscribe(() => this.cargar()); }
-  echarlo(uid: string) { if(confirm("🛑 ¿Echar?")) this.api.removeParticipant(this.id!, uid).subscribe(() => this.cargar()); }
-  crearPosit() { 
-    if(!this.id) return; 
-    const t = prompt("📝 Título:"); if(!t) return; 
-    const c = prompt("Contenido:"); 
-    const colores = ['#fef3c7', '#d1fae5', '#e0e7ff', '#fee2e2', '#f3f4f6'];
-    const color = colores[Math.floor(Math.random() * colores.length)];
-    this.api.createPosit(this.id, { titulo: t, contenido: c, color, orden: 0 }).subscribe(() => this.cargar()); 
+  invitar() { const email = prompt("✉️ Email:"); if (email && this.id) this.api.inviteUser(this.id, email).subscribe(() => this.cargar()); }
+  echarlo(uid: string) { if (confirm("🛑 ¿Echar?")) this.api.removeParticipant(this.id!, uid).subscribe(() => this.cargar()); }
+  abrirModal() {
+    this.mostrarModal = true;
+    this.nuevoPosit = { contenido: '', color: '#fef3c7' };
   }
-  borrarPosit(pid: string) { if(this.id && confirm("🗑️ ¿Borrar?")) this.api.deletePosit(this.id, pid).subscribe(() => this.cargar()); }
-  comentar(pid: string) { const t = prompt("💬 Comentario:"); if(t && this.id) this.api.addComment(this.id, pid, t).subscribe(() => this.cargar()); }
-  borrarComentario(pid: string, cid: string) { if(this.id) this.api.deleteComment(this.id, pid, cid).subscribe(() => this.cargar()); }
+
+  cerrarModal() {
+    this.mostrarModal = false;
+  }
+
+  seleccionarColor(color: string) {
+    this.nuevoPosit.color = color;
+  }
+
+  guardarPosit() {
+    if (!this.id || !this.nuevoPosit.contenido.trim()) return;
+
+    this.api.createPosit(this.id, {
+      titulo: this.nuevoPosit.contenido.substring(0, 30) + '...',
+      contenido: this.nuevoPosit.contenido,
+      color: this.nuevoPosit.color,
+      orden: 0
+    }).subscribe(() => {
+      this.cargar();
+      this.cerrarModal();
+    });
+  }
+
+  crearPosit() {
+    this.abrirModal();
+  }
+  borrarPosit(pid: string) { if (this.id && confirm("🗑️ ¿Borrar?")) this.api.deletePosit(this.id, pid).subscribe(() => this.cargar()); }
+  comentar(pid: string) { const t = prompt("💬 Comentario:"); if (t && this.id) this.api.addComment(this.id, pid, t).subscribe(() => this.cargar()); }
+  borrarComentario(pid: string, cid: string) { if (this.id) this.api.deleteComment(this.id, pid, cid).subscribe(() => this.cargar()); }
 }

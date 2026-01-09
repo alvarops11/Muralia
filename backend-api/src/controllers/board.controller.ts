@@ -3,14 +3,14 @@
 import { Request, Response } from 'express';
 import Board from '../models/Board';
 import { generateId } from '../utils/idGenerator';
-import User from '../models/User'; 
-import { 
-  createBoardSchema, 
-  createPositSchema, 
-  updatePositSchema, 
-  inviteUserSchema, 
-  updateBoardSchema, 
-  addCommentSchema 
+import User from '../models/User';
+import {
+  createBoardSchema,
+  createPositSchema,
+  updatePositSchema,
+  inviteUserSchema,
+  updateBoardSchema,
+  addCommentSchema
 } from '../types/validator';
 
 // --- HELPER PARA SOCKETS (NUEVO) ---
@@ -19,9 +19,9 @@ const emitirActualizacion = (req: Request, boardId: string, accion: string) => {
   const io = req.app.get('socketio');
   if (io) {
     // Enviamos un evento 'tablero_actualizado' a todos en la sala 'boardId'
-    io.to(boardId).emit('tablero_actualizado', { 
-      accion, 
-      autor: req.currentUser?.email 
+    io.to(boardId).emit('tablero_actualizado', {
+      accion,
+      autor: req.currentUser?.email
     });
   }
 };
@@ -31,7 +31,7 @@ export const createBoard = async (req: Request, res: Response) => {
   try {
     // 1. Validar datos de entrada con Zod
     const validatedData = createBoardSchema.parse(req.body);
-    
+
     // 2. Obtener usuario autenticado (garantizado por el middleware)
     const user = req.currentUser!;
 
@@ -52,6 +52,7 @@ export const createBoard = async (req: Request, res: Response) => {
 
     // 5. Guardar en MongoDB
     await newBoard.save();
+    console.log(`[Boards] Nuevo tablero guardado: ${newBoard._id}`);
 
     res.status(201).json({ message: 'Tablero creado', board: newBoard });
   } catch (error: any) {
@@ -64,13 +65,16 @@ export const createBoard = async (req: Request, res: Response) => {
 };
 
 export const getMyBoards = async (req: Request, res: Response) => {
+  console.log(`[Boards] Obteniendo tableros para usuario: ${req.currentUser?._id}`);
   try {
     const user = req.currentUser!;
 
     // Buscar tableros donde el usuario esté en el array de participantes
+    console.log(`[Boards] Iniciando búsqueda para: ${user._id}`);
     const boards = await Board.find({
       'participantes.usuario_id': user._id
-    });
+    }).maxTimeMS(5000); // 5 segundos de timeout
+    console.log(`[Boards] Query completada. Encontrados: ${boards.length}`);
 
     res.json(boards);
   } catch (error) {
@@ -95,7 +99,7 @@ export const addPosit = async (req: Request, res: Response) => {
       contenido: data.contenido || '',
       color: data.color || 'yellow',
       // Forzamos X e Y a 0, usamos el orden que nos manden o 0
-      posicion: { x: 0, y: 0, orden: data.orden || 0 }, 
+      posicion: { x: 0, y: 0, orden: data.orden || 0 },
       autor_id: user._id,
       fecha_creacion: new Date(),
       comentarios: []
@@ -127,9 +131,9 @@ export const updatePosit = async (req: Request, res: Response) => {
     const dataToUpdate = updatePositSchema.parse(req.body);
 
     // 1. Buscamos el tablero completo
-    const board = await Board.findOne({ 
-      _id: boardId, 
-      'participantes.usuario_id': user._id 
+    const board = await Board.findOne({
+      _id: boardId,
+      'participantes.usuario_id': user._id
     });
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
@@ -144,40 +148,40 @@ export const updatePosit = async (req: Request, res: Response) => {
 
     // A) Si solo cambiamos texto/color (sin mover orden)
     if (dataToUpdate.orden === undefined) {
-        if (dataToUpdate.titulo) posit.titulo = dataToUpdate.titulo;
-        if (dataToUpdate.contenido) posit.contenido = dataToUpdate.contenido;
-        if (dataToUpdate.color) posit.color = dataToUpdate.color;
-        
-        // Marcamos a Mongoose que hemos modificado el array
-        board.markModified('posits'); 
-    } 
-    
+      if (dataToUpdate.titulo) posit.titulo = dataToUpdate.titulo;
+      if (dataToUpdate.contenido) posit.contenido = dataToUpdate.contenido;
+      if (dataToUpdate.color) posit.color = dataToUpdate.color;
+
+      // Marcamos a Mongoose que hemos modificado el array
+      board.markModified('posits');
+    }
+
     // B) Si cambiamos el ORDEN (Drag & Drop)
     else {
-        if (dataToUpdate.titulo) posit.titulo = dataToUpdate.titulo;
-        if (dataToUpdate.contenido) posit.contenido = dataToUpdate.contenido;
-        if (dataToUpdate.color) posit.color = dataToUpdate.color;
+      if (dataToUpdate.titulo) posit.titulo = dataToUpdate.titulo;
+      if (dataToUpdate.contenido) posit.contenido = dataToUpdate.contenido;
+      if (dataToUpdate.color) posit.color = dataToUpdate.color;
 
-        // 1. Sacamos el posit de su lugar actual
-        board.posits.splice(positIndex, 1);
+      // 1. Sacamos el posit de su lugar actual
+      board.posits.splice(positIndex, 1);
 
-        // 2. Ordenamos el resto
-        board.posits.sort((a, b) => (a.posicion.orden || 0) - (b.posicion.orden || 0));
+      // 2. Ordenamos el resto
+      board.posits.sort((a, b) => (a.posicion.orden || 0) - (b.posicion.orden || 0));
 
-        // 3. Calculamos dónde meterlo
-        let nuevoIndice = dataToUpdate.orden;
-        if (nuevoIndice < 0) nuevoIndice = 0;
-        if (nuevoIndice > board.posits.length) nuevoIndice = board.posits.length;
+      // 3. Calculamos dónde meterlo
+      let nuevoIndice = dataToUpdate.orden;
+      if (nuevoIndice < 0) nuevoIndice = 0;
+      if (nuevoIndice > board.posits.length) nuevoIndice = board.posits.length;
 
-        // 4. Lo insertamos en la nueva posición
-        board.posits.splice(nuevoIndice, 0, posit);
+      // 4. Lo insertamos en la nueva posición
+      board.posits.splice(nuevoIndice, 0, posit);
 
-        // 5. RE-NUMERAMOS TODO
-        board.posits.forEach((p, index) => {
-            p.posicion.orden = index;
-        });
+      // 5. RE-NUMERAMOS TODO
+      board.posits.forEach((p, index) => {
+        p.posicion.orden = index;
+      });
 
-        board.markModified('posits');
+      board.markModified('posits');
     }
 
     // Guardamos todos los cambios
@@ -189,7 +193,7 @@ export const updatePosit = async (req: Request, res: Response) => {
     res.json({ message: 'Posit actualizado y reordenado', posit });
 
   } catch (error) {
-    console.error(error); 
+    console.error(error);
     res.status(500).json({ error: 'Error actualizando posit' });
   }
 };
@@ -220,12 +224,12 @@ export const deletePosit = async (req: Request, res: Response) => {
 
   try {
     const board = await Board.findOneAndUpdate(
-      { 
-        _id: boardId, 
-        'participantes.usuario_id': user._id 
+      {
+        _id: boardId,
+        'participantes.usuario_id': user._id
       },
-      { 
-        $pull: { posits: { posit_id: positId } } 
+      {
+        $pull: { posits: { posit_id: positId } }
       },
       { new: true }
     );
@@ -258,10 +262,10 @@ export const inviteUser = async (req: Request, res: Response) => {
 
     // 3. Añadir al tablero CON SEGURIDAD
     const board = await Board.findOneAndUpdate(
-      { 
+      {
         _id: boardId,
-        participantes: { 
-          $elemMatch: { usuario_id: user._id, permiso: 'admin' } 
+        participantes: {
+          $elemMatch: { usuario_id: user._id, permiso: 'admin' }
         }
       },
       {
@@ -277,17 +281,17 @@ export const inviteUser = async (req: Request, res: Response) => {
     );
 
     if (!board) {
-      return res.status(403).json({ 
-        error: 'No tienes permisos de Admin en este tablero o el tablero no existe' 
+      return res.status(403).json({
+        error: 'No tienes permisos de Admin en este tablero o el tablero no existe'
       });
     }
 
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'inviteUser');
 
-    res.json({ 
-      message: `Usuario ${email} invitado correctamente`, 
-      participantes: board.participantes 
+    res.json({
+      message: `Usuario ${email} invitado correctamente`,
+      participantes: board.participantes
     });
 
   } catch (error: any) {
@@ -310,7 +314,7 @@ export const addComment = async (req: Request, res: Response) => {
         $push: {
           'posits.$.comentarios': {
             usuario_id: user._id,
-            contenido, 
+            contenido,
             fecha: new Date()
           }
         }
@@ -319,7 +323,7 @@ export const addComment = async (req: Request, res: Response) => {
     );
 
     if (!board) return res.status(404).json({ error: 'No se pudo comentar' });
-    
+
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'addComment');
 
@@ -340,16 +344,16 @@ export const updateBoard = async (req: Request, res: Response) => {
     const dataToUpdate = updateBoardSchema.parse(req.body);
 
     const board = await Board.findOneAndUpdate(
-      { 
-        _id: boardId, 
+      {
+        _id: boardId,
         participantes: { $elemMatch: { usuario_id: user._id, permiso: 'admin' } }
       },
-      { $set: dataToUpdate }, 
+      { $set: dataToUpdate },
       { new: true }
     );
 
     if (!board) return res.status(403).json({ error: 'No tienes permisos o tablero no existe' });
-    
+
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'updateBoard');
 
@@ -373,7 +377,7 @@ export const deleteBoard = async (req: Request, res: Response) => {
     });
 
     if (result.deletedCount === 0) return res.status(403).json({ error: 'No se pudo borrar (Permisos o no existe)' });
-    
+
     // 🔥 SOCKET (Para avisar a otros que se cierra)
     emitirActualizacion(req, boardId, 'deleteBoard');
 
@@ -391,20 +395,20 @@ export const removeParticipant = async (req: Request, res: Response) => {
   try {
     // Si te borras a ti mismo
     if (userIdToRemove === user._id) {
-       await Board.findByIdAndUpdate(boardId, {
-         $pull: { participantes: { usuario_id: user._id } }
-       });
-       
-       // 🔥 SOCKET (Avisar que salí)
-       emitirActualizacion(req, boardId, 'removeParticipant');
-       
-       return res.json({ message: 'Has salido del tablero' });
+      await Board.findByIdAndUpdate(boardId, {
+        $pull: { participantes: { usuario_id: user._id } }
+      });
+
+      // 🔥 SOCKET (Avisar que salí)
+      emitirActualizacion(req, boardId, 'removeParticipant');
+
+      return res.json({ message: 'Has salido del tablero' });
     }
 
     // Si es expulsar a otro
     const board = await Board.findOneAndUpdate(
-      { 
-        _id: boardId, 
+      {
+        _id: boardId,
         participantes: { $elemMatch: { usuario_id: user._id, permiso: 'admin' } }
       },
       {
@@ -433,18 +437,18 @@ export const deleteComment = async (req: Request, res: Response) => {
     const board = await Board.findOneAndUpdate(
       { _id: boardId, 'posits.posit_id': positId },
       {
-        $pull: { 
-          'posits.$.comentarios': { 
-            _id: commentId, 
-            usuario_id: user._id 
-          } 
+        $pull: {
+          'posits.$.comentarios': {
+            _id: commentId,
+            usuario_id: user._id
+          }
         }
       },
       { new: true }
     );
 
     if (!board) return res.status(404).json({ error: 'Comentario no encontrado o no eres el autor' });
-    
+
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'deleteComment');
 

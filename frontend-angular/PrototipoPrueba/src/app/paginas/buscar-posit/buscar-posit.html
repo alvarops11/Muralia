@@ -1,7 +1,10 @@
 <div class="modal-container">
     <div class="modal-header">
-        <span class="header-icon">🔍</span>
-        <h3>Buscar Post-it</h3>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="header-icon">🔍</span>
+            <h3>Buscar Post-it</h3>
+        </div>
+        <span class="close-modal-x" (click)="cerrar.emit()">×</span>
     </div>
 
     <div class="modal-body">
@@ -10,6 +13,7 @@
                 <span class="search-icon">🔍</span>
                 <input type="text" [(ngModel)]="terminoBusqueda" class="search-input"
                     placeholder="Buscar por palabra clave o contenido...">
+                <span *ngIf="terminoBusqueda" class="clear-search" (click)="terminoBusqueda = ''">×</span>
             </div>
             <button class="btn-search-action">🔍</button>
         </div>
@@ -17,12 +21,10 @@
         <div class="filters-row">
             <button class="filter-chip" [class.active]="filtroActual === 'Todos'"
                 (click)="cambiarFiltro('Todos')">Todos</button>
-            <button class="filter-chip" [class.active]="filtroActual === 'Con archivos'"
-                (click)="cambiarFiltro('Con archivos')">Con archivos</button>
+            <button class="filter-chip" [class.active]="filtroActual === 'Con comentarios'"
+                (click)="cambiarFiltro('Con comentarios')">Con Comentarios</button>
             <button class="filter-chip" [class.active]="filtroActual === 'Destacados'"
                 (click)="cambiarFiltro('Destacados')">Destacados</button>
-            <button class="filter-chip" [class.active]="filtroActual === 'Mi contribucción'"
-                (click)="cambiarFiltro('Mi contribucción')">Mi contribucción</button>
         </div>
 
         <div class="status-box success" *ngIf="terminoBusqueda">
@@ -33,13 +35,17 @@
 
         <div class="results-list"
             style="max-height: 400px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px;">
-            <div *ngFor="let posit of resultadosFiltrados" class="result-card">
+            <div *ngFor="let posit of resultadosFiltrados" class="result-card"
+                [style.border-left]="'6px solid ' + posit.color">
                 <div class="result-content">
                     <h4 class="result-title">{{ posit.titulo }}</h4>
                     <p class="result-desc">{{ posit.contenido | slice:0:100 }}{{ posit.contenido.length > 100 ? '...' :
                         '' }}</p>
+                    <div class="result-meta" *ngIf="posit.comentarios?.length">
+                        <span>💬 {{ posit.comentarios.length }} comentarios</span>
+                    </div>
                 </div>
-                <button class="btn-ver" (click)="seleccionar(posit.posit_id)">Ver</button>
+                <button class="btn-ver" (click)="seleccionar(posit.posit_id)">Ver en Tablero</button>
             </div>
 
             <div *ngIf="resultadosFiltrados.length === 0" class="no-results"

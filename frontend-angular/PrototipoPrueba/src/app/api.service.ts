@@ -6,7 +6,7 @@ import { Injectable, inject } from '@angular/core';
 export class ApiService {
   private http = inject(HttpClient);
   // URL de tu Backend (Asegúrate de que el puerto 3000 sea correcto)
-  private apiUrl = 'https://lpn41v3w-3000.uks1.devtunnels.ms/api/boards'; 
+  private apiUrl = 'http://localhost:3000/api/boards'; //cambiar para pasar de local a lanzar el servidor 
 
   // --- TABLEROS ---
   getBoards() { return this.http.get<any[]>(this.apiUrl); }

@@ -1,0 +1,69 @@
+<div class="register-container">
+    <div class="register-card">
+        <div class="register-header">
+            <h1>Muralia</h1>
+            <p>Crea tu cuenta para comenzar</p>
+        </div>
+
+        <form [formGroup]="registerForm" (ngSubmit)="onSubmit()" class="register-form">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" formControlName="email" placeholder="tu@email.com"
+                    [class.error]="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                <span class="error-message"
+                    *ngIf="registerForm.get('email')?.invalid && registerForm.get('email')?.touched">
+                    Por favor, introduce un email válido
+                </span>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Contraseña</label>
+                <input type="password" id="password" formControlName="password" placeholder="••••••••"
+                    [class.error]="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                <span class="error-message"
+                    *ngIf="registerForm.get('password')?.invalid && registerForm.get('password')?.touched">
+                    La contraseña debe tener al menos 6 caracteres
+                </span>
+            </div>
+
+            <div class="form-group">
+                <label for="confirmPassword">Confirmar contraseña</label>
+                <input type="password" id="confirmPassword" formControlName="confirmPassword" placeholder="••••••••"
+                    [class.error]="!passwordsMatch && registerForm.get('confirmPassword')?.touched">
+                <span class="error-message" *ngIf="!passwordsMatch && registerForm.get('confirmPassword')?.touched">
+                    Las contraseñas no coinciden
+                </span>
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="rol">Rol</label>
+                    <select id="rol" formControlName="rol">
+                        <option value="Alumno">Alumno</option>
+                        <option value="Profesor">Profesor</option>
+                        <option value="Admin">Admin</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="centro">Centro</label>
+                    <input type="text" id="centro" formControlName="centro" placeholder="Tu centro">
+                </div>
+            </div>
+
+            <div class="alert alert-error" *ngIf="errorMessage">
+                {{ errorMessage }}
+            </div>
+
+            <button type="submit" class="btn-register"
+                [disabled]="registerForm.invalid || !passwordsMatch || isLoading">
+                <span *ngIf="!isLoading">Crear cuenta</span>
+                <span *ngIf="isLoading">Creando...</span>
+            </button>
+        </form>
+
+        <div class="register-footer">
+            <p>¿Ya tienes cuenta? <a routerLink="/login">Inicia sesión</a></p>
+        </div>
+    </div>
+</div>

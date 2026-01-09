@@ -1,0 +1,25 @@
+<div class="home-container">
+    <header class="home-header">
+        <h1>Muralia</h1>
+        <button class="btn-logout" (click)="logout()">Cerrar sesión</button>
+    </header>
+
+    <main class="home-content">
+        <div class="welcome-card">
+            <h2>¡Bienvenido!</h2>
+            <div class="user-info" *ngIf="user">
+                <p><strong>Email:</strong> {{ user.email }}</p>
+                <p><strong>Rol:</strong> {{ user.rol }}</p>
+                <p *ngIf="user.centro"><strong>Centro:</strong> {{ user.centro }}</p>
+            </div>
+        </div>
+
+        <div class="token-card">
+            <h3>Tu Token de Sesión</h3>
+            <p class="token-info">Este token se utiliza para autenticar tus peticiones a la API</p>
+            <div class="token-display">
+                <code>{{ token }}</code>
+            </div>
+        </div>
+    </main>
+</div>

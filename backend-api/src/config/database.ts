@@ -10,7 +10,7 @@ export const connectDB = async (): Promise<void> => {
 
     // Opciones para asegurar compatibilidad y eventos
     await mongoose.connect(uri);
-    
+
     console.log('✅ MongoDB Conectado exitosamente');
   } catch (error) {
     console.error('❌ Error conectando a MongoDB:', error);

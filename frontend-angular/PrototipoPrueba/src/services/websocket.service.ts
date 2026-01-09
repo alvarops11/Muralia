@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
 })
 export class WebsocketService {
   private socket: Socket;
-  private readonly URL = 'https://lpn41v3w-3000.uks1.devtunnels.ms/'; 
+  private readonly URL = 'http://localhost:3000/'; //cambiar cuando sea
 
   constructor() {
     this.socket = io(this.URL, {

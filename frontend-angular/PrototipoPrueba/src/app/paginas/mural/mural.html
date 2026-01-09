@@ -1,129 +1,143 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muralia - Tablero</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    
-    <link rel="stylesheet" href="mural.css">
-</head>
-<body>
+<!-- Modal de Creación (Migrado) -->
+<div *ngIf="mostrarModal" class="modal-overlay-mural" (click)="cerrarModal()">
+    <div class="modal-popup-mural" (click)="$event.stopPropagation()">
+        <div class="modal-header-creation">
+            <h2>✏️ Nuevo Post-it</h2>
+        </div>
 
-    <header class="header">
-        <h2>Muralia</h2>
-    </header>
+        <div class="modal-body-creation">
+            <label class="form-label-mural">Contenido *</label>
+            <textarea [(ngModel)]="nuevoPosit.contenido" class="form-textarea-mural"
+                placeholder="Escribe tu idea, nota o comentario..." rows="6"></textarea>
 
-    <div class="main-container">
-        
-        <aside class="sidebar">
-            <button class="btn-new-note">📝 Nueva Nota</button>
-
-            <div class="team-section">
-                <h4>EQUIPO (2)</h4>
-                
-                <div class="team-member">
-                    <div class="avatar">U</div>
-                    <div class="member-info">
-                        <div class="member-name">user_99</div>
-                        <div class="member-role">admin</div>
-                    </div>
-                    <span class="remove-icon">×</span>
-                </div>
-
-                <div class="team-member">
-                    <div class="avatar" style="background-color: #8e44ad;">U</div>
-                    <div class="member-info">
-                        <div class="member-name">user_55</div>
-                        <div class="member-role">lector</div>
-                    </div>
-                    <span class="remove-icon">×</span>
-                </div>
+            <label class="form-label-mural">Color del Post-it</label>
+            <div class="color-picker-mural">
+                <div *ngFor="let c of coloresDisponibles" class="color-option-mural"
+                    [class.selected]="nuevoPosit.color === c" [style.background-color]="c"
+                    (click)="seleccionarColor(c)"></div>
             </div>
 
-            <div class="sidebar-actions">
-                <button class="action-btn">🔗 Compartir:</button>
-                <button class="action-btn">📄 PDF</button>
-                <button class="action-btn">🔍 Buscar</button>
-                <button class="action-btn">📈 Estadística</button>
-            </div>
-        </aside>
+            <label class="form-label-mural attachment-label">
+                <span>🔗 Adjuntar archivo</span>
+            </label>
+            <button class="file-button-mural">Seleccionar archivo</button>
+        </div>
 
-        <main class="board-area">
-            <div class="notes-grid">
-                
-                <div class="note yellow">
-                    <div class="note-header">
-                        <span>⋮⋮⋮</span>
-                        <span>🗑️</span>
-                    </div>
-                    <div class="note-title">Diseñar Logo</div>
-                    <div class="note-subtitle">Usar colores corporativos</div>
-                    
-                    <div class="task-list">
-                        <div class="task-item">
-                            Me gusta el boceto
-                            <span class="close">✖</span>
-                        </div>
-                        <div class="task-item">
-                            Boceto de prueba
-                            <span class="close">✖</span>
-                        </div>
-                    </div>
-                    <div class="btn-comment">+ Comentar</div>
-                </div>
+        <div class="modal-footer-mural">
+            <button class="btn-save-mural" (click)="guardarPosit()">Guardar</button>
+            <button class="btn-cancel-mural" (click)="cerrarModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
 
-                <div class="note green">
-                    <div class="note-header">
-                        <span>⋮⋮⋮</span>
-                        <span>🗑️</span>
-                    </div>
-                    <div class="note-title">Prueba 1</div>
-                    <div class="note-subtitle">Prueba 1</div>
-                    <div class="btn-comment">+ Comentar</div>
-                </div>
+<!-- Modal de Búsqueda (Migrado) -->
+<div *ngIf="mostrarBuscar" class="modal-overlay-mural" (click)="cerrarBuscar()">
+    <div class="modal-popup-search" (click)="$event.stopPropagation()">
+        <app-buscar-posit [posits]="board?.posits" (cerrar)="cerrarBuscar()"
+            (irAlPosit)="navegarAPosit($event)"></app-buscar-posit>
+        <button class="btn-close-search" (click)="cerrarBuscar()">Cerrar</button>
+    </div>
+</div>
 
-                <div class="note yellow">
-                    <div class="note-header">
-                        <span>⋮⋮⋮</span>
-                        <span>🗑️</span>
-                    </div>
-                    <div class="note-title">Diseñar Logo</div>
-                    <div class="note-subtitle">Usar colores corporativos</div>
-                    <div class="task-list">
-                        <div class="task-item">Me gusta el boceto <span class="close">✖</span></div>
-                    </div>
-                    <div class="btn-comment">+ Comentar</div>
-                </div>
+<header class="header">
+    <h2>Muralia</h2>
+</header>
 
-                <div class="note green">
-                    <div class="note-header">
-                        <span>⋮⋮⋮</span>
-                        <span>🗑️</span>
-                    </div>
-                    <div class="note-title">Prueba 1</div>
-                    <div class="note-subtitle">Prueba 1</div>
-                    <div class="btn-comment">+ Comentar</div>
-                </div>
+<div class="app-layout" style="display: flex; height: calc(100vh - 60px); overflow: hidden;">
 
-                 <div class="note yellow">
-                    <div class="note-header">
-                        <span>⋮⋮⋮</span>
-                        <span>🗑️</span>
-                    </div>
-                    <div class="note-title">Diseñar Logo</div>
-                    <div class="note-subtitle">Usar colores corporativos</div>
-                    <div class="task-list">
-                        <div class="task-item">Me gusta el boceto <span class="close">✖</span></div>
-                        <div class="task-item">Boceto de prueba <span class="close">✖</span></div>
-                    </div>
-                    <div class="btn-comment">+ Comentar</div>
-                </div>
-
-            </div>
-        </main>
-
+    <!-- Capa de Fantasmas (Real-time moving) -->
+    <div class="ghost-layer">
+        <div *ngFor="let ghost of ghosts | keyvalue" class="ghost-posit"
+            [style.transform]="'translate3d(' + ghost.value.x + 'px, ' + ghost.value.y + 'px, 0)'"
+            [style.background-color]="ghost.value.color">
+            <div class="ghost-user-badge">👤 {{ ghost.value.usuario || '?' }}</div>
+            <strong>{{ ghost.value.titulo }}</strong>
+        </div>
     </div>
 
-</body>
-</html>
+    <!-- Sidebar con Equipo y Acciones -->
+    <aside class="sidebar">
+        <div *ngIf="board" class="board-header-info">
+            <h1>{{ board.titulo }}</h1>
+            <div class="meta-info">
+                <span class="id-badge">tabler...</span>
+                <span class="status-badge">{{ board.privacidad | uppercase }}</span>
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <button class="btn-new-note-mural" (click)="crearPosit()">📝 Nueva Nota</button>
+            <button class="btn-invite-white" (click)="invitar()">📧 Invitar Equipo</button>
+        </div>
+
+        <div *ngIf="board" class="team-section">
+            <h4>EQUIPO ({{ board.participantes.length }})</h4>
+
+            <div *ngFor="let p of board.participantes" class="team-member">
+                <div class="avatar">{{ ($any(p.usuario_id) + '') | slice:0:1 | uppercase }}</div>
+                <div class="member-info">
+                    <div class="member-name">{{ ($any(p.usuario_id) + '') | slice:0:10 }}</div>
+                    <div class="member-role">{{ p.permiso }}</div>
+                </div>
+                <span class="remove-icon" (click)="echarlo(p.usuario_id)">×</span>
+            </div>
+        </div>
+
+        <div class="sidebar-actions">
+            <button class="premium-btn">
+                <span class="btn-icon">📄</span> PDF
+            </button>
+            <button class="premium-btn" (click)="abrirBuscar()">
+                <span class="btn-icon">🔍</span> Buscar
+            </button>
+            <button class="premium-btn">
+                <span class="btn-icon">📈</span> Estadística
+            </button>
+        </div>
+    </aside>
+
+    <!-- Área de Tablero Kanban -->
+    <main class="board-area">
+
+        <div *ngIf="cargando" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Sincronizando...</p>
+        </div>
+
+        <div *ngIf="error" class="error-banner-mural">
+            ❌ {{ error }} <a routerLink="/dashboard" class="error-link">Salir</a>
+        </div>
+
+        <div *ngIf="board" class="notes-grid" cdkDropList cdkDropListOrientation="mixed"
+            (cdkDropListDropped)="soltar($event)">
+
+            <div *ngFor="let posit of board.posits" class="note" [class.yellow]="posit.color === '#fef3c7'"
+                [style.background-color]="posit.color" cdkDrag [attr.data-posit-id]="posit.posit_id"
+                (cdkDragMoved)="alMoverDrag($event, posit)" (cdkDragEnded)="alSoltarDrag(posit)"
+                [class.being-moved-remote]="ghosts[posit.posit_id]">
+
+                <div class="custom-placeholder" *cdkDragPlaceholder></div>
+
+                <div class="note-header">
+                    <span class="drag-handle" cdkDragHandle>⋮⋮⋮</span>
+                    <span class="order-tag">#{{ posit.posicion?.orden }}</span>
+                    <span class="delete-icon" (click)="borrarPosit(posit.posit_id)">🗑️</span>
+                </div>
+
+                <div class="note-title">{{ posit.titulo }}</div>
+                <div class="note-subtitle">{{ posit.contenido }}</div>
+
+                <div class="task-list">
+                    <div *ngFor="let c of posit.comentarios" class="task-item">
+                        {{ c.contenido }}
+                        <span class="close" (click)="borrarComentario(posit.posit_id, c._id)">✖</span>
+                    </div>
+                </div>
+
+                <div class="btn-comment" (click)="comentar(posit.posit_id)">+ Comentar</div>
+            </div>
+
+        </div>
+    </main>
+
+</div>

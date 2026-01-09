@@ -1,25 +1,17 @@
 /* --- Configuración General --- */
-body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #f0f2f5; /* Fondo de la página */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
-
 .modal-container {
-    background-color: #E0E0E0; /* Gris de fondo del modal */
+    background-color: #E0E0E0;
+    /* Gris de fondo del modal */
     width: 650px;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
     overflow: hidden;
 }
 
 /* --- Encabezado --- */
 .modal-header {
-    background-color: #5C6BC0; /* Azul */
+    background-color: #5C6BC0;
+    /* Azul */
     color: white;
     padding: 15px 20px;
     display: flex;
@@ -67,7 +59,8 @@ body {
 
 .search-input {
     width: 100%;
-    padding: 12px 12px 12px 40px; /* Espacio para el icono */
+    padding: 12px 12px 12px 40px;
+    /* Espacio para el icono */
     border-radius: 6px;
     border: 1px solid #aaa;
     outline: none;
@@ -109,14 +102,16 @@ body {
 }
 
 .filter-chip.active {
-    background-color: #5C6BC0; /* Azul activo */
+    background-color: #5C6BC0;
+    /* Azul activo */
     color: white;
     border-color: #5C6BC0;
 }
 
 /* --- 3. Caja de Estado (Cyan) --- */
 .status-box {
-    background-color: #E0F7FA; /* Cyan claro */
+    background-color: #E0F7FA;
+    /* Cyan claro */
     border: 1px solid #B2EBF2;
     padding: 12px;
     border-radius: 6px;
@@ -128,7 +123,8 @@ body {
 }
 
 .check-icon {
-    background-color: #00C853; /* Verde check */
+    background-color: #00C853;
+    /* Verde check */
     color: white;
     width: 20px;
     height: 20px;
@@ -148,7 +144,7 @@ body {
     display: flex;
     flex-direction: column;
     gap: 15px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
 .result-content {
@@ -170,7 +166,8 @@ body {
 }
 
 .btn-ver {
-    align-self: flex-start; /* Alineado a la izquierda */
+    align-self: flex-start;
+    /* Alineado a la izquierda */
     background-color: #5C6BC0;
     color: white;
     border: none;

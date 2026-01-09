@@ -31,12 +31,12 @@ export class BuscarPosit {
       );
     }
 
-    // Filtrar por categoría (simulada por ahora)
-    if (this.filtroActual === 'Con archivos') {
-      // Supongamos que tienen una propiedad archivos o algo similar
-      // filtrados = filtrados.filter(p => p.tieneArchivos); 
+    // Filtrar por categoría
+    if (this.filtroActual === 'Con comentarios') {
+      filtrados = filtrados.filter(p => p.comentarios && p.comentarios.length > 0);
     } else if (this.filtroActual === 'Destacados') {
-      // filtrados = filtrados.filter(p => p.destacado);
+      // Definimos destacados como los que tienen más de 1 comentario
+      filtrados = filtrados.filter(p => p.comentarios && p.comentarios.length > 1);
     }
 
     return filtrados;

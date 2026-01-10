@@ -9,11 +9,15 @@ import { Subscription, Subject } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
 
 import { BuscarPosit } from '../buscar-posit/buscar-posit';
+import { Compartir } from '../compartir/compartir';
+import { Exportar } from '../exportar/exportar';
+import { Estadisticas } from '../estadisticas/estadisticas';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-mural',
   standalone: true,
-  imports: [CommonModule, RouterLink, DragDropModule, FormsModule, BuscarPosit],
+  imports: [CommonModule, RouterLink, DragDropModule, FormsModule, BuscarPosit, Compartir, Exportar, Estadisticas],
   templateUrl: './mural.html',
   styleUrl: './mural.css',
 })
@@ -24,14 +28,31 @@ export class Mural implements OnInit, OnDestroy {
   cd = inject(ChangeDetectorRef);
   route = inject(ActivatedRoute);
   wsService = inject(WebsocketService);
+  private notify = inject(NotificationService);
 
   board: any = null;
   cargando = false;
   error = '';
 
+  // Helper para mostrar nombres reales o IDs
+  getMemberName(u: any): string {
+    if (!u) return 'Anónimo';
+    if (typeof u === 'object') {
+      if (u.nombre) return u.nombre;
+      if (u.email) return u.email.split('@')[0];
+      return u._id ? (u._id + '').slice(0, 10) : 'Usuario';
+    }
+    const str = u + '';
+    return str.includes('@') ? str.split('@')[0] : str.slice(0, 10);
+  }
+
   // Modal state
   mostrarModal = false;
   mostrarBuscar = false;
+  mostrarCompartir = false;
+  mostrarExportar = false;
+  mostrarEstadisticas = false;
+  guardandoPosit = false;
   nuevoPosit = { contenido: '', color: '#fef3c7' };
   coloresDisponibles = ['#fef3c7', '#a5f3fc', '#fbcfe8', '#bbf7d0', '#fed7aa'];
 
@@ -173,14 +194,25 @@ export class Mural implements OnInit, OnDestroy {
     if (this.id) {
       this.api.updatePosit(this.id, posit.posit_id, { orden: nuevoOrden }).subscribe({
         next: () => console.log("Guardado"),
-        error: () => { alert("Error guardando"); this.cargar(); }
+        error: () => { this.notify.error("Error al guardar la posición"); this.cargar(); }
       });
     }
   }
 
   // --- Métodos Auxiliares ---
-  invitar() { const email = prompt("✉️ Email:"); if (email && this.id) this.api.inviteUser(this.id, email).subscribe(() => this.cargar()); }
-  echarlo(uid: string) { if (confirm("🛑 ¿Echar?")) this.api.removeParticipant(this.id!, uid).subscribe(() => this.cargar()); }
+  async invitar(emailManual?: string) {
+    const email = emailManual || await this.notify.prompt("✉️ Email:");
+    if (email && this.id) {
+      this.api.inviteUser(this.id, email).subscribe(() => this.cargar());
+    }
+  }
+
+  async echarlo(uid: string) {
+    if (await this.notify.confirm("🛑 ¿Echar al colaborador?")) {
+      this.api.removeParticipant(this.id!, uid).subscribe(() => this.cargar());
+    }
+  }
+
   abrirModal() {
     this.mostrarModal = true;
     this.nuevoPosit = { contenido: '', color: '#fef3c7' };
@@ -195,25 +227,49 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   guardarPosit() {
-    if (!this.id || !this.nuevoPosit.contenido.trim()) return;
+    if (!this.id || !this.nuevoPosit.contenido.trim() || this.guardandoPosit) return;
 
+    this.guardandoPosit = true;
     this.api.createPosit(this.id, {
       titulo: this.nuevoPosit.contenido.substring(0, 30) + (this.nuevoPosit.contenido.length > 30 ? '...' : ''),
       contenido: this.nuevoPosit.contenido,
       color: this.nuevoPosit.color,
       orden: 0
-    }).subscribe(() => {
-      this.cargar();
-      this.cerrarModal();
+    }).subscribe({
+      next: () => {
+        this.guardandoPosit = false;
+        this.cerrarModal();
+        this.cargar(true); // Recarga silenciosa para no bloquear
+      },
+      error: () => {
+        this.notify.error("❌ Error al crear la nota. Inténtalo de nuevo.");
+        this.guardandoPosit = false;
+      }
     });
   }
 
   crearPosit() {
     this.abrirModal();
   }
-  borrarPosit(pid: string) { if (this.id && confirm("🗑️ ¿Borrar?")) this.api.deletePosit(this.id, pid).subscribe(() => this.cargar()); }
-  comentar(pid: string) { const t = prompt("💬 Comentario:"); if (t && this.id) this.api.addComment(this.id, pid, t).subscribe(() => this.cargar()); }
-  borrarComentario(pid: string, cid: string) { if (this.id) this.api.deleteComment(this.id, pid, cid).subscribe(() => this.cargar()); }
+
+  async borrarPosit(pid: string) {
+    if (this.id && await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar este posit?")) {
+      this.api.deletePosit(this.id, pid).subscribe(() => this.cargar());
+    }
+  }
+
+  async comentar(pid: string) {
+    const t = await this.notify.prompt("💬 Escribe tu comentario:");
+    if (t && this.id) {
+      this.api.addComment(this.id, pid, t).subscribe(() => this.cargar());
+    }
+  }
+
+  async borrarComentario(pid: string, cid: string) {
+    if (this.id && await this.notify.confirm("🗑️ ¿Borrar comentario?")) {
+      this.api.deleteComment(this.id, pid, cid).subscribe(() => this.cargar());
+    }
+  }
 
   abrirBuscar() {
     this.mostrarBuscar = true;
@@ -221,6 +277,30 @@ export class Mural implements OnInit, OnDestroy {
 
   cerrarBuscar() {
     this.mostrarBuscar = false;
+  }
+
+  abrirCompartir() {
+    this.mostrarCompartir = true;
+  }
+
+  cerrarCompartir() {
+    this.mostrarCompartir = false;
+  }
+
+  abrirExportar() {
+    this.mostrarExportar = true;
+  }
+
+  cerrarExportar() {
+    this.mostrarExportar = false;
+  }
+
+  abrirEstadisticas() {
+    this.mostrarEstadisticas = true;
+  }
+
+  cerrarEstadisticas() {
+    this.mostrarEstadisticas = false;
   }
 
   navegarAPosit(pid: string) {

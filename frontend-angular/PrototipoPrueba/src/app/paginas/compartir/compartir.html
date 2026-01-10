@@ -11,8 +11,8 @@
         <div class="form-group">
             <label class="form-label">Enlace de compartición</label>
             <div class="link-row">
-                <input type="text" class="form-input" value="mural.com/shared/a7k9q2m" readonly>
-                <button class="btn-copy">
+                <input type="text" class="form-input" [value]="shareLink" readonly>
+                <button class="btn-copy" (click)="copyLink()">
                     <span class="copy-icon">📋</span>
                     Copiar
                 </button>
@@ -20,34 +20,31 @@
         </div>
 
         <div class="form-group">
-            <label class="form-label">Usuarios compartidos</label>
+            <label class="form-label">Usuarios compartidos ({{ participantes.length }})</label>
             <div class="users-list">
 
-                <div class="user-item">
+                <div *ngFor="let p of participantes" class="user-item">
                     <span class="user-avatar">👤</span>
                     <div class="user-info">
-                        <span class="user-email">maria@email.com</span>
-                        <span class="user-role">Editor</span>
+                        <span class="user-email">{{ getMemberName(p.usuario_id) }}</span>
+                        <span class="user-role">{{ p.permiso }}</span>
                     </div>
-                </div>
-
-                <div class="user-item">
-                    <span class="user-avatar">👤</span>
-                    <div class="user-info">
-                        <span class="user-email">carlos@email.com</span>
-                        <span class="user-role">Lector</span>
-                    </div>
+                    <span class="remove-user-btn" (click)="remove(p.usuario_id?._id || p.usuario_id)">×</span>
                 </div>
 
             </div>
         </div>
 
-        <div class="form-group">
+        <div class="form-group" style="margin-top: 5px;">
             <label class="form-label">Añadir nuevo usuario</label>
-            <input type="text" class="form-input" placeholder="Email del usuario">
+            <div class="invite-row">
+                <input type="text" class="form-input" placeholder="Email del usuario..." [(ngModel)]="newEmail"
+                    (keyup.enter)="invite()">
+                <button class="btn-invite-submit" (click)="invite()">
+                    Añadir
+                </button>
+            </div>
         </div>
-
-        <button class="btn-full-width">Añadir Usuario</button>
 
     </div>
 </div>

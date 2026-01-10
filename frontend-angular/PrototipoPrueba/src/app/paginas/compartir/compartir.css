@@ -1,25 +1,16 @@
-/* --- Configuración General --- */
-body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #f0f2f5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
-
 .modal-container {
-    background-color: #E0E0E0; /* Gris del cuerpo del modal */
-    width: 600px;
+    background-color: #f5f5f5;
+    width: 100%;
+    max-width: 480px;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
     overflow: hidden;
 }
 
 /* --- Encabezado --- */
 .modal-header {
-    background-color: #5C6BC0; /* Azul principal */
+    background-color: #5C6BC0;
+    /* Azul principal */
     color: white;
     padding: 15px 20px;
     display: flex;
@@ -33,7 +24,9 @@ body {
     font-weight: 500;
 }
 
-.header-icon { font-size: 20px; }
+.header-icon {
+    font-size: 20px;
+}
 
 /* --- Cuerpo --- */
 .modal-body {
@@ -73,7 +66,7 @@ body {
 
 /* El input toma todo el espacio disponible */
 .link-row .form-input {
-    flex: 1; 
+    flex: 1;
     color: #666;
 }
 
@@ -85,7 +78,8 @@ body {
     padding: 0 20px;
     cursor: pointer;
     display: flex;
-    flex-direction: column; /* Icono arriba, texto abajo */
+    flex-direction: column;
+    /* Icono arriba, texto abajo */
     align-items: center;
     justify-content: center;
     font-size: 12px;
@@ -135,20 +129,51 @@ body {
     color: #666;
 }
 
-/* --- Botón Grande Final --- */
-.btn-full-width {
-    width: 100%;
+/* --- Sección Invitar --- */
+.invite-row {
+    display: flex;
+    gap: 10px;
+}
+
+.invite-row .form-input {
+    flex: 1;
+}
+
+.btn-invite-submit {
     background-color: #5C6BC0;
     color: white;
     border: none;
-    padding: 14px;
-    font-size: 16px;
     border-radius: 8px;
+    padding: 0 20px;
     cursor: pointer;
     font-weight: 500;
-    margin-top: 10px;
+    transition: background-color 0.2s;
 }
 
-.btn-full-width:hover, .btn-copy:hover {
+.btn-invite-submit:hover {
+    background-color: #4f5dad;
+}
+
+.remove-user-btn {
+    color: #ccc;
+    cursor: pointer;
+    font-size: 20px;
+    margin-left: auto;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.remove-user-btn:hover {
+    color: #ef4444;
+    background-color: #fee2e2;
+}
+
+.btn-full-width:hover,
+.btn-copy:hover {
     background-color: #4f5dad;
 }

@@ -9,6 +9,7 @@ interface IJwtPayload {
   rol: string;
   centro: string;
   email: string;
+  nombre?: string;
   iat?: number;
   exp?: number;
 }
@@ -35,6 +36,7 @@ export const validateToken = async (req: Request, res: Response, next: NextFunct
       decoded.id_user, // Tu _id es manual (string)
       {
         email: decoded.email,
+        nombre: decoded.nombre,
         rol: decoded.rol,
         centro: decoded.centro
       },

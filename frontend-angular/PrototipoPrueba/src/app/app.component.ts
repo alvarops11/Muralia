@@ -1,13 +1,17 @@
-// archivo: src/app/app.component.ts
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ToastComponent } from './componentes/toast/toast.component';
+import { DialogComponent } from './componentes/dialog/dialog.component';
 
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet],
-  // TRUCO: Usamos 'template' en vez de 'templateUrl' para no depender del archivo html
-  template: `<router-outlet></router-outlet>`, 
+  imports: [RouterOutlet, ToastComponent, DialogComponent],
+  template: `
+    <router-outlet></router-outlet>
+    <app-toast></app-toast>
+    <app-dialog></app-dialog>
+  `,
   styleUrl: './app.component.css'
 })
 export class AppComponent {

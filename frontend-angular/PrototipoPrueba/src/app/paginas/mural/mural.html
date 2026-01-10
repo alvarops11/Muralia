@@ -24,7 +24,9 @@
         </div>
 
         <div class="modal-footer-mural">
-            <button class="btn-save-mural" (click)="guardarPosit()">Guardar</button>
+            <button class="btn-save-mural" (click)="guardarPosit()" [disabled]="guardandoPosit">
+                {{ guardandoPosit ? 'Guardando...' : 'Guardar' }}
+            </button>
             <button class="btn-cancel-mural" (click)="cerrarModal()">Cancelar</button>
         </div>
     </div>
@@ -37,6 +39,32 @@
             (irAlPosit)="navegarAPosit($event)"></app-buscar-posit>
         <button class="btn-close-search" (click)="cerrarBuscar()">Cerrar</button>
     </div>
+</div>
+
+<!-- Modal de Compartir -->
+<div *ngIf="mostrarCompartir" class="modal-overlay-mural" (click)="cerrarCompartir()">
+    <app-compartir [boardId]="board?._id" [participantes]="board?.participantes || []" (onInvite)="invitar($event)"
+        (onRemove)="echarlo($event)" (click)="$event.stopPropagation()"
+        style="width: 100%; max-width: 600px; display: flex; justify-content: center;"></app-compartir>
+    <button class="btn-close-share" (click)="cerrarCompartir()">Cerrar</button>
+</div>
+
+<!-- Modal de Exportar -->
+<div *ngIf="mostrarExportar" class="modal-overlay-mural" (click)="cerrarExportar()">
+    <div style="width: 100%; max-width: 600px; display: flex; justify-content: center;"
+        (click)="$event.stopPropagation()">
+        <app-exportar [board]="board" (onClose)="cerrarExportar()" style="width: 100%;"></app-exportar>
+    </div>
+    <button class="btn-close-share" (click)="cerrarExportar()">Cerrar</button>
+</div>
+
+<!-- Modal de Estadísticas -->
+<div *ngIf="mostrarEstadisticas" class="modal-overlay-mural" (click)="cerrarEstadisticas()">
+    <div style="width: 100%; max-width: 600px; display: flex; justify-content: center;"
+        (click)="$event.stopPropagation()">
+        <app-estadisticas [board]="board" style="width: 100%;"></app-estadisticas>
+    </div>
+    <button class="btn-close-share" (click)="cerrarEstadisticas()">Cerrar</button>
 </div>
 
 <header class="header">
@@ -57,6 +85,13 @@
 
     <!-- Sidebar con Equipo y Acciones -->
     <aside class="sidebar">
+        <!-- Botón de Volver -->
+        <div class="sidebar-back">
+            <button class="btn-back-mural" routerLink="/boards">
+                ← Mis Tableros
+            </button>
+        </div>
+
         <div *ngIf="board" class="board-header-info">
             <h1>{{ board.titulo }}</h1>
             <div class="meta-info">
@@ -67,30 +102,30 @@
 
         <div class="top-actions">
             <button class="btn-new-note-mural" (click)="crearPosit()">📝 Nueva Nota</button>
-            <button class="btn-invite-white" (click)="invitar()">📧 Invitar Equipo</button>
+            <button class="btn-invite-white" (click)="abrirCompartir()">📧 Invitar Equipo</button>
         </div>
 
         <div *ngIf="board" class="team-section">
             <h4>EQUIPO ({{ board.participantes.length }})</h4>
 
             <div *ngFor="let p of board.participantes" class="team-member">
-                <div class="avatar">{{ ($any(p.usuario_id) + '') | slice:0:1 | uppercase }}</div>
+                <div class="avatar">{{ getMemberName(p.usuario_id) | slice:0:1 | uppercase }}</div>
                 <div class="member-info">
-                    <div class="member-name">{{ ($any(p.usuario_id) + '') | slice:0:10 }}</div>
+                    <div class="member-name">{{ getMemberName(p.usuario_id) }}</div>
                     <div class="member-role">{{ p.permiso }}</div>
                 </div>
-                <span class="remove-icon" (click)="echarlo(p.usuario_id)">×</span>
+                <span class="remove-icon" (click)="echarlo(p.usuario_id?._id || p.usuario_id)">×</span>
             </div>
         </div>
 
         <div class="sidebar-actions">
-            <button class="premium-btn">
+            <button class="premium-btn" (click)="abrirExportar()">
                 <span class="btn-icon">📄</span> PDF
             </button>
             <button class="premium-btn" (click)="abrirBuscar()">
                 <span class="btn-icon">🔍</span> Buscar
             </button>
-            <button class="premium-btn">
+            <button class="premium-btn" (click)="abrirEstadisticas()">
                 <span class="btn-icon">📈</span> Estadística
             </button>
         </div>

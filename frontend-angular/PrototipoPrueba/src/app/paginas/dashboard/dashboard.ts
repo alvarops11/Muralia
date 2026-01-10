@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { ApiService } from '../../api.service';
+import { NotificationService } from '../../services/notification.service';
 
 interface Board {
   _id: string;
@@ -22,6 +23,7 @@ export class Dashboard implements OnInit {
   private api = inject(ApiService);
   private router = inject(Router);
   private cdr = inject(ChangeDetectorRef);
+  private notify = inject(NotificationService);
 
   boards: Board[] = [];
   loading = true;
@@ -82,7 +84,7 @@ export class Dashboard implements OnInit {
 
   confirmCreateBoard() {
     if (!this.newBoardTitle.trim()) {
-      alert('Por favor, ingresa un nombre para el mural.');
+      this.notify.warning('Por favor, ingresa un nombre para el mural.');
       return;
     }
 
@@ -101,7 +103,7 @@ export class Dashboard implements OnInit {
       },
       error: (err) => {
         console.error('Error creating board:', err);
-        alert('Error al crear el mural. Por favor, intenta de nuevo.');
+        this.notify.error('Error al crear el mural. Por favor, intenta de nuevo.');
       }
     });
   }
@@ -130,7 +132,7 @@ export class Dashboard implements OnInit {
         this.loadBoards(); // Reload after deletion
       },
       error: (err) => {
-        alert('Error al eliminar el mural. Por favor, intenta de nuevo.');
+        this.notify.error('Error al eliminar el mural. Por favor, intenta de nuevo.');
       }
     });
   }

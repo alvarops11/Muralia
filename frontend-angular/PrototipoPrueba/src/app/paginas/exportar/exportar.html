@@ -1,70 +1,63 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Modal Exportar PDF</title>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="exportar.css">
-</head>
-<body>
+<div class="modal-container">
 
-    <div class="modal-container">
-        
-        <div class="modal-header">
-            <h3>Exportar a PDF</h3>
+    <div class="modal-header">
+        <h3>Exportar a PDF</h3>
+    </div>
+
+    <div class="modal-body">
+
+        <div class="form-group">
+            <label class="section-label">Orientación</label>
+            <div class="orientation-options">
+                <button class="btn-option" [class.active]="opciones.orientacion === 'p'"
+                    (click)="opciones.orientacion = 'p'">Vertical</button>
+                <button class="btn-option" [class.active]="opciones.orientacion === 'l'"
+                    (click)="opciones.orientacion = 'l'">Horizontal</button>
+            </div>
         </div>
 
-        <div class="modal-body">
-            
-            <div class="form-group">
-                <label class="section-label">Orientación</label>
-                <div class="orientation-options">
-                    <button class="btn-option active">Vertical</button>
-                    <button class="btn-option">Horizontal</button>
-                </div>
+        <div class="form-group">
+            <label class="section-label">Incluir en el PDF</label>
+            <div class="checkbox-list">
+
+                <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="opciones.incluirTitulo">
+                    <span class="custom-checkbox"></span>
+                    Título y descripción del tablero
+                </label>
+
+                <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="opciones.incluirAutor">
+                    <span class="custom-checkbox"></span>
+                    Autor de cada post
+                </label>
+
+                <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="opciones.incluirFechas">
+                    <span class="custom-checkbox"></span>
+                    Fechas de creación
+                </label>
+
+                <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="opciones.incluirComentarios">
+                    <span class="custom-checkbox"></span>
+                    Comentarios
+                </label>
+
+                <label class="checkbox-item">
+                    <input type="checkbox" [(ngModel)]="opciones.incluirAdjuntos">
+                    <span class="custom-checkbox"></span>
+                    Imagenes/archivos adjuntos
+                </label>
+
             </div>
-
-            <div class="form-group">
-                <label class="section-label">Incluir en el PDF</label>
-                <div class="checkbox-list">
-                    
-                    <label class="checkbox-item">
-                        <input type="checkbox" checked> 
-                        Título y descripción del tablero
-                    </label>
-
-                    <label class="checkbox-item">
-                        <input type="checkbox"> 
-                        Autor de cada post
-                    </label>
-
-                    <label class="checkbox-item">
-                        <input type="checkbox" checked> 
-                        Fechas de creación
-                    </label>
-
-                    <label class="checkbox-item">
-                        <input type="checkbox" checked> 
-                        Comentarios
-                    </label>
-
-                    <label class="checkbox-item">
-                        <input type="checkbox"> 
-                        Imagenes/archivos adjuntos
-                    </label>
-
-                </div>
-            </div>
-
-        </div>
-
-        <div class="modal-footer">
-            <button class="btn btn-primary">Descargar PDF</button>
-            <button class="btn btn-secondary">Cancelar</button>
         </div>
 
     </div>
 
-</body>
-</html>
+    <div class="modal-footer">
+        <button class="btn btn-primary" (click)="download()">Descargar PDF</button>
+        <button class="btn btn-secondary" (click)="close()">Cancelar</button>
+    </div>
+
+</div>

@@ -206,8 +206,11 @@ export const getBoardById = async (req: Request, res: Response) => {
   try {
     const board = await Board.findOne({
       _id: boardId,
-      'participantes.usuario_id': user._id // Seguridad: Solo si eres participante
-    });
+      'participantes.usuario_id': user._id
+    })
+      .populate('participantes.usuario_id')
+      .populate('posits.autor_id')
+      .populate('posits.comentarios.usuario_id');
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado o acceso denegado' });
 

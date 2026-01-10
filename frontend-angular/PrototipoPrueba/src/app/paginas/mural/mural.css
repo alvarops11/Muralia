@@ -52,6 +52,29 @@ body {
 }
 
 /* Cabecera del Tablero en Sidebar */
+.sidebar-back {
+    margin-bottom: 20px;
+}
+
+.btn-back-mural {
+    background: none;
+    border: none;
+    color: #888;
+    padding: 0;
+    font-weight: 700;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.btn-back-mural:hover {
+    color: #555;
+    transform: translateX(-4px);
+}
+
 .board-header-info {
     margin-bottom: 25px;
 }
@@ -733,6 +756,26 @@ body {
 
 .btn-close-search:hover {
     background: rgba(255, 255, 255, 0.3);
+}
+
+/* Modal de Compartir */
+.btn-close-share {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    background: #e5e7eb;
+    border: none;
+    color: #374151;
+    padding: 5px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+    z-index: 1001;
+}
+
+.btn-close-share:hover {
+    background: #d1d5db;
 }
 
 /* Animación de Resalte para Búsqueda */

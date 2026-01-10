@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-login',
@@ -30,12 +31,15 @@ import { Router } from '@angular/router';
 })
 export class LoginComponent {
   token = '';
-  constructor(private router: Router) {}
+  private router = inject(Router);
+  private notify = inject(NotificationService);
 
   saveToken() {
-    if(this.token.trim()) {
+    if (this.token.trim()) {
       localStorage.setItem('jwt_token', this.token.trim());
       this.router.navigate(['/boards']);
-    } else { alert("Pega un token válido"); }
+    } else {
+      this.notify.warning("Por favor, pega un token válido");
+    }
   }
 }

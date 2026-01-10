@@ -1,20 +1,12 @@
-/* --- Configuración General --- */
-body {
-    font-family: 'Roboto', sans-serif;
-    background-color: #333;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-}
-
 .modal-container {
     background-color: #E0E0E0;
-    width: 600px;
+    width: 100%;
+    max-width: 600px;
+    min-width: 450px;
     border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     overflow: hidden;
+    border: 1px solid #ccc;
 }
 
 /* --- Encabezado --- */
@@ -33,14 +25,17 @@ body {
     font-weight: 500;
 }
 
-.header-icon { font-size: 20px; }
+.header-icon {
+    font-size: 20px;
+}
 
 /* --- Cuerpo --- */
 .modal-body {
     padding: 25px;
     display: flex;
     flex-direction: column;
-    gap: 30px; /* Espacio entre las tarjetas y la lista */
+    gap: 30px;
+    /* Espacio entre las tarjetas y la lista */
 }
 
 /* --- Tarjetas de Resumen (Stats) --- */
@@ -51,11 +46,13 @@ body {
 }
 
 .stat-card {
-    background-color: #E0F7FA; /* Cyan claro */
+    background-color: #E0F7FA;
+    /* Cyan claro */
     border: 1px solid #B2EBF2;
     border-radius: 8px;
     padding: 20px;
-    flex: 1; /* Las 3 tarjetas ocupan el mismo ancho */
+    flex: 1;
+    /* Las 3 tarjetas ocupan el mismo ancho */
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -98,11 +95,13 @@ body {
     background-color: white;
     padding: 15px 20px;
     border-radius: 8px;
-    border: 1px solid #ccc; /* Borde suave */
+    border: 1px solid #ccc;
+    /* Borde suave */
     display: flex;
-    justify-content: space-between; /* Separa nombre a la izq y contador a la der */
+    justify-content: space-between;
+    /* Separa nombre a la izq y contador a la der */
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
 .collab-info {

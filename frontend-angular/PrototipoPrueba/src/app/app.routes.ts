@@ -6,6 +6,7 @@ import { BoardDetailComponent } from './pages/board-detail/board-detail.componen
 
 export const routes: Routes = [
     { path: 'login', component: LoginComponent },
+    { path: 'register', loadComponent: () => import('./pages/register/register.component').then(m => m.RegisterComponent) },
     { path: 'boards', component: DashboardComponent },
     { path: 'board/:id', component: BoardDetailComponent }, // El :id es clave
     { path: '', redirectTo: 'login', pathMatch: 'full' }

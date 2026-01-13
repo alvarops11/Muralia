@@ -1,0 +1,178 @@
+<!-- Modal de Creación (Migrado) -->
+<div *ngIf="mostrarModal" class="modal-overlay-mural" (click)="cerrarModal()">
+    <div class="modal-popup-mural" (click)="$event.stopPropagation()">
+        <div class="modal-header-creation">
+            <h2>✏️ Nuevo Post-it</h2>
+        </div>
+
+        <div class="modal-body-creation">
+            <label class="form-label-mural">Contenido *</label>
+            <textarea [(ngModel)]="nuevoPosit.contenido" class="form-textarea-mural"
+                placeholder="Escribe tu idea, nota o comentario..." rows="6"></textarea>
+
+            <label class="form-label-mural">Color del Post-it</label>
+            <div class="color-picker-mural">
+                <div *ngFor="let c of coloresDisponibles" class="color-option-mural"
+                    [class.selected]="nuevoPosit.color === c" [style.background-color]="c"
+                    (click)="seleccionarColor(c)"></div>
+            </div>
+
+            <label class="form-label-mural attachment-label">
+                <span>🔗 Adjuntar archivo</span>
+            </label>
+            <button class="file-button-mural">Seleccionar archivo</button>
+        </div>
+
+        <div class="modal-footer-mural">
+            <button class="btn-save-mural" (click)="guardarPosit()" [disabled]="guardandoPosit">
+                {{ guardandoPosit ? 'Guardando...' : 'Guardar' }}
+            </button>
+            <button class="btn-cancel-mural" (click)="cerrarModal()">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Búsqueda (Migrado) -->
+<div *ngIf="mostrarBuscar" class="modal-overlay-mural" (click)="cerrarBuscar()">
+    <div class="modal-popup-search" (click)="$event.stopPropagation()">
+        <app-buscar-posit [posits]="board?.posits" (cerrar)="cerrarBuscar()"
+            (irAlPosit)="navegarAPosit($event)"></app-buscar-posit>
+        <button class="btn-close-search" (click)="cerrarBuscar()">Cerrar</button>
+    </div>
+</div>
+
+<!-- Modal de Compartir -->
+<div *ngIf="mostrarCompartir" class="modal-overlay-mural" (click)="cerrarCompartir()">
+    <app-compartir [boardId]="board?._id" [participantes]="board?.participantes || []" (onInvite)="invitar($event)"
+        (onRemove)="echarlo($event)" (click)="$event.stopPropagation()"
+        style="width: 100%; max-width: 600px; display: flex; justify-content: center;"></app-compartir>
+    <button class="btn-close-share" (click)="cerrarCompartir()">Cerrar</button>
+</div>
+
+<!-- Modal de Exportar -->
+<div *ngIf="mostrarExportar" class="modal-overlay-mural" (click)="cerrarExportar()">
+    <div style="width: 100%; max-width: 600px; display: flex; justify-content: center;"
+        (click)="$event.stopPropagation()">
+        <app-exportar [board]="board" (onClose)="cerrarExportar()" style="width: 100%;"></app-exportar>
+    </div>
+    <button class="btn-close-share" (click)="cerrarExportar()">Cerrar</button>
+</div>
+
+<!-- Modal de Estadísticas -->
+<div *ngIf="mostrarEstadisticas" class="modal-overlay-mural" (click)="cerrarEstadisticas()">
+    <div style="width: 100%; max-width: 600px; display: flex; justify-content: center;"
+        (click)="$event.stopPropagation()">
+        <app-estadisticas [board]="board" style="width: 100%;"></app-estadisticas>
+    </div>
+    <button class="btn-close-share" (click)="cerrarEstadisticas()">Cerrar</button>
+</div>
+
+<header class="header">
+    <h2>Muralia</h2>
+</header>
+
+<div class="app-layout" style="display: flex; height: calc(100vh - 60px); overflow: hidden;">
+
+    <!-- Capa de Fantasmas (Real-time moving) -->
+    <div class="ghost-layer">
+        <div *ngFor="let ghost of ghosts | keyvalue" class="ghost-posit"
+            [style.transform]="'translate3d(' + ghost.value.x + 'px, ' + ghost.value.y + 'px, 0)'"
+            [style.background-color]="ghost.value.color">
+            <div class="ghost-user-badge">👤 {{ ghost.value.usuario || '?' }}</div>
+            <strong>{{ ghost.value.titulo }}</strong>
+        </div>
+    </div>
+
+    <!-- Sidebar con Equipo y Acciones -->
+    <aside class="sidebar">
+        <!-- Botón de Volver -->
+        <div class="sidebar-back">
+            <button class="btn-back-mural" routerLink="/boards">
+                ← Mis Tableros
+            </button>
+        </div>
+
+        <div *ngIf="board" class="board-header-info">
+            <h1>{{ board.titulo }}</h1>
+            <div class="meta-info">
+                <span class="id-badge">tabler...</span>
+                <span class="status-badge">{{ board.privacidad | uppercase }}</span>
+            </div>
+        </div>
+
+        <div class="top-actions">
+            <button class="btn-new-note-mural" (click)="crearPosit()">📝 Nueva Nota</button>
+            <button class="btn-invite-white" (click)="abrirCompartir()">📧 Invitar Equipo</button>
+        </div>
+
+        <div *ngIf="board" class="team-section">
+            <h4>EQUIPO ({{ board.participantes.length }})</h4>
+
+            <div *ngFor="let p of board.participantes" class="team-member">
+                <div class="avatar">{{ getMemberName(p.usuario_id) | slice:0:1 | uppercase }}</div>
+                <div class="member-info">
+                    <div class="member-name">{{ getMemberName(p.usuario_id) }}</div>
+                    <div class="member-role">{{ p.permiso }}</div>
+                </div>
+                <span class="remove-icon" (click)="echarlo(p.usuario_id?._id || p.usuario_id)">×</span>
+            </div>
+        </div>
+
+        <div class="sidebar-actions">
+            <button class="premium-btn" (click)="abrirExportar()">
+                <span class="btn-icon">📄</span> PDF
+            </button>
+            <button class="premium-btn" (click)="abrirBuscar()">
+                <span class="btn-icon">🔍</span> Buscar
+            </button>
+            <button class="premium-btn" (click)="abrirEstadisticas()">
+                <span class="btn-icon">📈</span> Estadística
+            </button>
+        </div>
+    </aside>
+
+    <!-- Área de Tablero Kanban -->
+    <main class="board-area">
+
+        <div *ngIf="cargando" class="loading-overlay">
+            <div class="spinner"></div>
+            <p>Sincronizando...</p>
+        </div>
+
+        <div *ngIf="error" class="error-banner-mural">
+            ❌ {{ error }} <a routerLink="/dashboard" class="error-link">Salir</a>
+        </div>
+
+        <div *ngIf="board" class="notes-grid" cdkDropList cdkDropListOrientation="mixed"
+            (cdkDropListDropped)="soltar($event)">
+
+            <div *ngFor="let posit of board.posits" class="note" [class.yellow]="posit.color === '#fef3c7'"
+                [style.background-color]="posit.color" cdkDrag [attr.data-posit-id]="posit.posit_id"
+                (cdkDragMoved)="alMoverDrag($event, posit)" (cdkDragEnded)="alSoltarDrag(posit)"
+                [class.being-moved-remote]="ghosts[posit.posit_id]">
+
+                <div class="custom-placeholder" *cdkDragPlaceholder></div>
+
+                <div class="note-header">
+                    <span class="drag-handle" cdkDragHandle>⋮⋮⋮</span>
+                    <span class="order-tag">#{{ posit.posicion?.orden }}</span>
+                    <span class="delete-icon" (click)="borrarPosit(posit.posit_id)">🗑️</span>
+                </div>
+
+                <div class="note-title">{{ posit.titulo }}</div>
+                <div class="note-subtitle">{{ posit.contenido }}</div>
+
+                <div class="task-list">
+                    <div *ngFor="let c of posit.comentarios" class="task-item">
+                        {{ c.contenido }}
+                        <span class="close" (click)="borrarComentario(posit.posit_id, c._id)">✖</span>
+                    </div>
+                </div>
+
+                <div class="btn-comment" (click)="comentar(posit.posit_id)">+ Comentar</div>
+            </div>
+
+        </div>
+    </main>
+
+</div>

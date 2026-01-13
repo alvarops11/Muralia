@@ -1,0 +1,129 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    background-color: #f0f2f5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+.modal-container {
+    background-color: #E0E0E0;
+    width: 600px;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    overflow: hidden;
+}
+
+/* --- Encabezado --- */
+.modal-header {
+    background-color: #5C6BC0;
+    color: white;
+    padding: 20px 24px;
+    font-size: 20px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.modal-header span {
+    margin-right: 10px;
+    font-size: 24px;
+    font-weight: 400;
+}
+
+/* --- Cuerpo --- */
+.modal-body {
+    padding: 24px;
+}
+
+.form-group {
+    margin-bottom: 24px;
+}
+
+.form-label {
+    display: block;
+    font-size: 18px;
+    font-weight: 500;
+    color: #333;
+    margin-bottom: 12px;
+}
+
+.form-input, .form-textarea {
+    width: 100%;
+    padding: 16px;
+    font-size: 16px;
+    color: #757575;
+    background-color: #EEEEEE;
+    border: 1px solid #BDBDBD;
+    border-radius: 8px;
+    box-sizing: border-box;
+    font-family: inherit;
+}
+
+.form-textarea {
+    resize: none;
+    height: 100px;
+}
+
+.form-input::placeholder, .form-textarea::placeholder {
+    color: #9E9E9E;
+}
+
+/* --- Opciones de Radio --- */
+.radio-group {
+    display: flex;
+    gap: 40px;
+    margin-top: 12px;
+}
+
+.radio-option {
+    display: flex;
+    align-items: center;
+    font-size: 16px;
+    color: #333;
+    cursor: pointer;
+}
+
+.radio-option input[type="radio"] {
+    margin-right: 10px;
+    transform: scale(1.2);
+    accent-color: #5C6BC0;
+}
+
+/* --- Botones --- */
+.modal-footer {
+    padding: 0 24px 24px 24px;
+    display: flex;
+    gap: 20px;
+}
+
+.btn {
+    flex: 1;
+    padding: 16px;
+    font-size: 18px;
+    font-weight: 500;
+    border-radius: 8px;
+    cursor: pointer;
+    text-align: center;
+    border: none;
+    font-family: inherit;
+}
+
+.btn-crear {
+    background-color: #5C6BC0;
+    color: white;
+}
+.btn-crear:hover {
+    background-color: #4f5dad;
+}
+
+.btn-cancelar {
+    background-color: transparent;
+    color: #333;
+    border: 1px solid #9E9E9E;
+}
+.btn-cancelar:hover {
+    background-color: #d5d5d5;
+}

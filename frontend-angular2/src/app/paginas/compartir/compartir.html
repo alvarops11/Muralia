@@ -1,0 +1,50 @@
+<div class="modal-container">
+
+
+    <div class="modal-header">
+        <span class="header-icon">🔗</span>
+        <h3>Compartir Mural</h3>
+    </div>
+
+    <div class="modal-body">
+
+        <div class="form-group">
+            <label class="form-label">Enlace de compartición</label>
+            <div class="link-row">
+                <input type="text" class="form-input" [value]="shareLink" readonly>
+                <button class="btn-copy" (click)="copyLink()">
+                    <span class="copy-icon">📋</span>
+                    Copiar
+                </button>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Usuarios compartidos ({{ participantes.length }})</label>
+            <div class="users-list">
+
+                <div *ngFor="let p of participantes" class="user-item">
+                    <span class="user-avatar">👤</span>
+                    <div class="user-info">
+                        <span class="user-email">{{ getMemberName(p.usuario_id) }}</span>
+                        <span class="user-role">{{ p.permiso }}</span>
+                    </div>
+                    <span class="remove-user-btn" (click)="remove(p.usuario_id?._id || p.usuario_id)">×</span>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="form-group" style="margin-top: 5px;">
+            <label class="form-label">Añadir nuevo usuario</label>
+            <div class="invite-row">
+                <input type="text" class="form-input" placeholder="Email del usuario..." [(ngModel)]="newEmail"
+                    (keyup.enter)="invite()">
+                <button class="btn-invite-submit" (click)="invite()">
+                    Añadir
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>

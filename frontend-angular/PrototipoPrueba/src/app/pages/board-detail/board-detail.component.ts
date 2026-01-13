@@ -328,7 +328,15 @@ export class BoardDetailComponent implements OnInit, OnDestroy {
   }
 
   // --- Métodos Auxiliares ---
-  invitar() { const email = prompt("✉️ Email:"); if(email && this.id) this.api.inviteUser(this.id, email).subscribe(() => this.cargar()); }
+    invitar() { 
+    const email = prompt("✉️ Email:"); 
+    if(email && this.id) {
+        this.api.inviteUser(this.id, email).subscribe({
+            next: () => this.cargar(),
+            error: (err) => alert("Error al invitar: " + (err.error?.message || err.message))
+        });
+    }
+  }
   echarlo(uid: string) { if(confirm("🛑 ¿Echar?")) this.api.removeParticipant(this.id!, uid).subscribe(() => this.cargar()); }
   crearPosit() { 
     if(!this.id) return; 

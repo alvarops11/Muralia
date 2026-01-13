@@ -4,6 +4,7 @@ import mongoose, { Schema } from 'mongoose';
 // --- Interfaces (Tipos TypeScript Planos) ---
 
 interface IComentario {
+  _id?: string;
   usuario_id: string;
   contenido: string;
   fecha: Date;
@@ -50,7 +51,7 @@ const ComentarioSchema = new Schema({
   usuario_id: { type: String, ref: 'User', required: true },
   contenido: { type: String, required: true },
   fecha: { type: Date, default: Date.now }
-}, { _id: false }); 
+});
 
 const PositSchema = new Schema({
   posit_id: { type: String, required: true },
@@ -71,10 +72,10 @@ const PositSchema = new Schema({
 
 const ParticipanteSchema = new Schema({
   usuario_id: { type: String, ref: 'User', required: true },
-  permiso: { 
-    type: String, 
-    enum: ['admin', 'lector', 'editor'], 
-    default: 'lector' 
+  permiso: {
+    type: String,
+    enum: ['admin', 'lector', 'editor'],
+    default: 'lector'
   },
   fecha_incorporacion: { type: Date, default: Date.now }
 }, { _id: false });
@@ -82,13 +83,13 @@ const ParticipanteSchema = new Schema({
 // --- Schema Principal ---
 
 const BoardSchema = new Schema<IBoard>({
-  _id: { type: String, required: true }, 
+  _id: { type: String, required: true },
   titulo: { type: String, required: true },
   descripcion: { type: String },
-  privacidad: { 
-    type: String, 
-    enum: ['publico', 'privado'], 
-    default: 'privado' 
+  privacidad: {
+    type: String,
+    enum: ['publico', 'privado'],
+    default: 'privado'
   },
   colorFondo: { type: String, default: '#FFFFFF' },
   formato: { type: String, default: 'kanban' },

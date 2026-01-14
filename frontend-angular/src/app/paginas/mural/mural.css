@@ -419,6 +419,57 @@ body {
     transform: scale(1.1);
 }
 
+.edit-icon {
+    opacity: 0.2;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 6px;
+}
+
+.edit-icon:hover {
+    opacity: 1;
+    background: rgba(85, 112, 241, 0.1);
+    color: #5570f1;
+    transform: scale(1.1);
+}
+
+.lock-icon {
+    font-size: 14px;
+    padding: 4px;
+    cursor: help;
+    animation: lockShake 2s infinite;
+}
+
+@keyframes lockShake {
+
+    0%,
+    100% {
+        transform: rotate(0);
+    }
+
+    10%,
+    20% {
+        transform: rotate(-10deg);
+    }
+
+    30%,
+    40% {
+        transform: rotate(10deg);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.header-actions {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
 .note-title {
     font-weight: 800;
     font-size: 1.1rem;

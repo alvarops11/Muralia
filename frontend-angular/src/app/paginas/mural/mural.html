@@ -2,7 +2,7 @@
 <div *ngIf="mostrarModal" class="modal-overlay-mural" (click)="cerrarModal()">
     <div class="modal-popup-mural" (click)="$event.stopPropagation()">
         <div class="modal-header-creation">
-            <h2>✏️ Nuevo Post-it</h2>
+            <h2>{{ isEditing ? '✏️ Editar Post-it' : '✨ Nuevo Post-it' }}</h2>
         </div>
 
         <div class="modal-body-creation">
@@ -161,8 +161,18 @@
                 <div class="note-header">
                     <span class="drag-handle">⋮⋮⋮</span>
                     <span class="order-tag">#{{ posit.posicion?.orden }}</span>
-                    <span class="delete-icon" (click)="borrarPosit(posit.posit_id); $event.stopPropagation()"
-                        (mousedown)="$event.stopPropagation()">🗑️</span>
+
+                    <div class="header-actions">
+                        <span *ngIf="locks[posit.posit_id]" class="lock-icon"
+                            [title]="'Editando: ' + locks[posit.posit_id]">🔒</span>
+
+                        <span *ngIf="!locks[posit.posit_id]" class="edit-icon"
+                            (click)="abrirEditar(posit); $event.stopPropagation()"
+                            (mousedown)="$event.stopPropagation()">✏️</span>
+
+                        <span class="delete-icon" (click)="borrarPosit(posit.posit_id); $event.stopPropagation()"
+                            (mousedown)="$event.stopPropagation()">🗑️</span>
+                    </div>
                 </div>
 
                 <div class="note-title">{{ posit.titulo }}</div>

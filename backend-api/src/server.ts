@@ -39,7 +39,7 @@ io.on('connection', (socket) => {
   // --- MOVIMIENTO EN TIEMPO REAL (GHOSTS) ---
   // Estos eventos son ligeros y NO tocan la base de datos.
   // Solo rebotan las coordenadas a los otros usuarios.
-  
+
   socket.on('moviendo_posit', (data) => {
     // data = { boardId, positId, x, y, usuario, color, titulo }
     // Enviamos a todos en la sala MENOS al que lo envía (broadcast)
@@ -48,6 +48,17 @@ io.on('connection', (socket) => {
 
   socket.on('parar_posit', (data) => {
     socket.to(data.boardId).emit('posit_parado', data);
+  });
+
+  // --- BLOQUEO DE EDICIÓN ---
+  socket.on('bloquear_posit', (data) => {
+    // data = { boardId, positId, usuario }
+    socket.to(data.boardId).emit('posit_bloqueado', data);
+  });
+
+  socket.on('desbloquear_posit', (data) => {
+    // data = { boardId, positId }
+    socket.to(data.boardId).emit('posit_desbloqueado', data);
   });
 
   socket.on('disconnect', () => {

@@ -60,8 +60,13 @@ export class Mural implements OnInit, OnDestroy {
   mostrarExportar = false;
   mostrarEstadisticas = false;
   guardandoPosit = false;
+  isEditing = false;
+  editPositId: string | null = null;
   nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
   coloresDisponibles = ['#fef3c7', '#a5f3fc', '#fbcfe8', '#bbf7d0', '#fed7aa'];
+
+  // Locks: { positId: usuario }
+  locks: { [key: string]: string } = {};
 
   // -- Control de Sockets y Ghosts --
   wsSubscription?: Subscription;
@@ -126,6 +131,21 @@ export class Mural implements OnInit, OnDestroy {
         this.dragSubject.pipe(throttleTime(16)).subscribe((pos) => {
           const name = this.auth.getUserName();
           this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, name);
+        })
+      );
+
+      // 7. Bloqueos de edición
+      this.subs.push(
+        this.wsService.onLock().subscribe((data: any) => {
+          this.locks[data.positId] = data.usuario;
+          this.cd.detectChanges();
+        })
+      );
+
+      this.subs.push(
+        this.wsService.onUnlock().subscribe((data: any) => {
+          delete this.locks[data.positId];
+          this.cd.detectChanges();
         })
       );
 
@@ -226,11 +246,36 @@ export class Mural implements OnInit, OnDestroy {
 
   abrirModal() {
     this.mostrarModal = true;
+    this.isEditing = false;
+    this.editPositId = null;
     this.nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
   }
 
+  abrirEditar(posit: any) {
+    if (this.locks[posit.posit_id]) return; // Si está bloqueado no hacemos nada
+
+    this.mostrarModal = true;
+    this.isEditing = true;
+    this.editPositId = posit.posit_id;
+    this.nuevoPosit = {
+      titulo: posit.titulo,
+      contenido: posit.contenido,
+      color: posit.color
+    };
+
+    // Emitir bloqueo
+    if (this.id) {
+      this.wsService.emitLock(this.id, posit.posit_id, this.auth.getUserName());
+    }
+  }
+
   cerrarModal() {
+    if (this.isEditing && this.id && this.editPositId) {
+      this.wsService.emitUnlock(this.id, this.editPositId);
+    }
     this.mostrarModal = false;
+    this.isEditing = false;
+    this.editPositId = null;
   }
 
   seleccionarColor(color: string) {
@@ -241,22 +286,45 @@ export class Mural implements OnInit, OnDestroy {
     if (!this.id || !this.nuevoPosit.contenido.trim() || this.guardandoPosit) return;
 
     this.guardandoPosit = true;
-    this.api.createPosit(this.id, {
-      titulo: this.nuevoPosit.titulo.trim() || (this.nuevoPosit.contenido.substring(0, 30) + (this.nuevoPosit.contenido.length > 30 ? '...' : '')),
-      contenido: this.nuevoPosit.contenido,
-      color: this.nuevoPosit.color,
-      orden: 0
-    }).subscribe({
-      next: () => {
-        this.guardandoPosit = false;
-        this.cerrarModal();
-        this.cargar(true); // Recarga silenciosa para no bloquear
-      },
-      error: () => {
-        this.notify.error("❌ Error al crear la nota. Inténtalo de nuevo.");
-        this.guardandoPosit = false;
-      }
-    });
+
+    if (this.isEditing && this.editPositId) {
+      // Editar
+      this.api.updatePosit(this.id, this.editPositId, {
+        titulo: this.nuevoPosit.titulo.trim(),
+        contenido: this.nuevoPosit.contenido,
+        color: this.nuevoPosit.color
+      }).subscribe({
+        next: () => {
+          this.guardandoPosit = false;
+          const pid = this.editPositId!;
+          this.wsService.emitUnlock(this.id!, pid); // Desbloqueamos
+          this.cerrarModal();
+          this.cargar(true);
+        },
+        error: () => {
+          this.notify.error("❌ Error al editar la nota.");
+          this.guardandoPosit = false;
+        }
+      });
+    } else {
+      // Crear
+      this.api.createPosit(this.id, {
+        titulo: this.nuevoPosit.titulo.trim() || (this.nuevoPosit.contenido.substring(0, 30) + (this.nuevoPosit.contenido.length > 30 ? '...' : '')),
+        contenido: this.nuevoPosit.contenido,
+        color: this.nuevoPosit.color,
+        orden: 0
+      }).subscribe({
+        next: () => {
+          this.guardandoPosit = false;
+          this.cerrarModal();
+          this.cargar(true); // Recarga silenciosa para no bloquear
+        },
+        error: () => {
+          this.notify.error("❌ Error al crear la nota. Inténtalo de nuevo.");
+          this.guardandoPosit = false;
+        }
+      });
+    }
   }
 
   crearPosit() {

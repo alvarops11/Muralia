@@ -60,4 +60,28 @@ export class WebsocketService {
       return () => this.socket.off('posit_parado');
     });
   }
+
+  // --- BLOQUEO DE EDICIÓN ---
+
+  emitLock(boardId: string, positId: string, usuario: string) {
+    this.socket.emit('bloquear_posit', { boardId, positId, usuario });
+  }
+
+  emitUnlock(boardId: string, positId: string) {
+    this.socket.emit('desbloquear_posit', { boardId, positId });
+  }
+
+  onLock(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('posit_bloqueado', (data) => subscriber.next(data));
+      return () => this.socket.off('posit_bloqueado');
+    });
+  }
+
+  onUnlock(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('posit_desbloqueado', (data) => subscriber.next(data));
+      return () => this.socket.off('posit_desbloqueado');
+    });
+  }
 }

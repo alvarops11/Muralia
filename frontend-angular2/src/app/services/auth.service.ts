@@ -19,7 +19,7 @@ interface RegisterData {
     email: string;
     password: string;
     rol?: string;
-    centro?: string;
+    centro?: string | null;
 }
 
 interface LoginData {

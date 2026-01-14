@@ -1,6 +1,7 @@
 // file: src/controllers/board.controller.ts
 
 import { Request, Response } from 'express';
+import { Types } from 'mongoose';
 import Board from '../models/Board';
 import { generateId } from '../utils/idGenerator';
 import User from '../models/User';
@@ -203,7 +204,10 @@ export const getBoardById = async (req: Request, res: Response) => {
     const board = await Board.findOne({
       _id: boardId,
       'participantes.usuario_id': user._id // Seguridad: Solo si eres participante
-    });
+    })
+      .populate('participantes.usuario_id', 'email')
+      .populate('posits.autor_id', 'email')
+      .populate('posits.comentarios.usuario_id', 'email');
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado o acceso denegado' });
 
@@ -430,6 +434,8 @@ export const deleteComment = async (req: Request, res: Response) => {
   const user = req.currentUser!;
 
   try {
+    console.log(`--- Intentando borrar comentario: board=${boardId}, posit=${positId}, comment=${commentId} ---`);
+
     // A) Verificar si el usuario es ADMIN del tablero
     const boardAdmin = await Board.findOne({
       _id: boardId,
@@ -447,17 +453,21 @@ export const deleteComment = async (req: Request, res: Response) => {
       query = {
         _id: boardId,
         'posits.posit_id': positId,
-        // Truco: usamos el filtro en el 'pull' de abajo, pero aquí al menos validamos acceso
         'participantes.usuario_id': user._id
       };
     }
 
+    // Convertimos commentId a ObjectId para asegurar el match en el $pull
+    // Los comentarios en Mongoose tienen _id autogenerado como ObjectId por defecto
+    const cid = new Types.ObjectId(commentId);
+
     // Ejecutamos el pull
-    // Si era admin, el $pull borrará por commentId sin mirar el autor
-    // Si NO era admin, añadimos la restricción de autor dentro del $pull
-    const pullCondition = boardAdmin
-      ? { _id: commentId }
-      : { _id: commentId, usuario_id: user._id };
+    const pullCondition: any = boardAdmin
+      ? { _id: cid }
+      : { _id: cid, usuario_id: user._id };
+
+    console.log('Query de búsqueda:', JSON.stringify(query));
+    console.log('Condición de Pull:', JSON.stringify(pullCondition));
 
     const board = await Board.findOneAndUpdate(
       query,
@@ -469,17 +479,28 @@ export const deleteComment = async (req: Request, res: Response) => {
       { new: true }
     );
 
-    // Si devuelve null o el array de comentarios no cambió (esto es más difícil de detectar con findOneAndUpdate simple sin pre-check, pero asumiremos exito si retorna board)
-    // Nota: Si el comentario no existía, findOneAndUpdate devuelve el board igual. 
-    // Para feedback perfecto haríamos find primero, pero para este MVP:
+    if (!board) {
+      console.log('No se encontró el tablero o posit con los permisos adecuados');
+      return res.status(404).json({ error: 'No se pudo borrar (No tienes permisos o no existe)' });
+    }
 
-    if (!board) return res.status(404).json({ error: 'No se pudo borrar (No tienes permisos o no existe)' });
+    // Buscamos si el comentario sigue ahí (si el pull no hizo nada)
+    const posit = board.posits.find(p => p.posit_id === positId);
+    const commentStillExists = posit?.comentarios.some(c => c._id?.toString() === commentId);
+
+    if (commentStillExists) {
+      console.log('El comentario no se borró (probablemente no eras el autor)');
+      return res.status(403).json({ error: 'No tienes permisos para borrar este comentario' });
+    }
+
+    console.log('Comentario borrado con éxito');
 
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'deleteComment');
 
     res.json({ message: 'Comentario eliminado' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error eliminando comentario' });
+  } catch (error: any) {
+    console.error('Error eliminando comentario:', error);
+    res.status(500).json({ error: 'Error eliminando comentario', details: error.message });
   }
 };

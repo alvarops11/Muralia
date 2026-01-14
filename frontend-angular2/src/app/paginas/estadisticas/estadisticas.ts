@@ -29,13 +29,18 @@ export class Estadisticas {
 
   getMemberName(u: any): string {
     if (!u) return 'Anónimo';
+    // Si es un objeto populado { _id, email, nombre? }
     if (typeof u === 'object') {
       if (u.nombre) return u.nombre;
       if (u.email) return u.email.split('@')[0];
-      return u._id ? (u._id + '').slice(0, 10) : 'Usuario';
+      // Si solo tiene ID, limpiamos el prefijo 'usuario_' si existe
+      let id = u._id || '';
+      return (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
     }
+    // Si es un string (ID o Email)
     const str = u + '';
-    return str.includes('@') ? str.split('@')[0] : str.slice(0, 10);
+    if (str.includes('@')) return str.split('@')[0];
+    return str.replace('usuario_', '').slice(0, 10);
   }
 
   get statsByUser() {

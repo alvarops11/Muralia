@@ -67,35 +67,36 @@
     <button class="btn-close-share" (click)="cerrarEstadisticas()">Cerrar</button>
 </div>
 
-<header class="header">
-    <h2>Muralia</h2>
-</header>
 
-<div class="app-layout" style="display: flex; height: calc(100vh - 60px); overflow: hidden;">
-
-    <!-- Capa de Fantasmas (Real-time moving) -->
-    <div class="ghost-layer">
-        <div *ngFor="let ghost of ghosts | keyvalue" class="ghost-posit"
-            [style.transform]="'translate3d(' + ghost.value.x + 'px, ' + ghost.value.y + 'px, 0)'"
-            [style.background-color]="ghost.value.color">
-            <div class="ghost-user-badge">👤 {{ ghost.value.usuario || '?' }}</div>
-            <strong>{{ ghost.value.titulo }}</strong>
-        </div>
+<div class="ghost-layer">
+    <div *ngFor="let ghost of ghosts | keyvalue" class="ghost-posit"
+        [style.transform]="'translate3d(' + ghost.value.x + 'px, ' + ghost.value.y + 'px, 0) rotate(3deg)'"
+        [style.background-color]="ghost.value.color">
+        <div class="ghost-user-badge">👤 {{ ghost.value.usuario || '?' }}</div>
+        <div class="note-title">{{ ghost.value.titulo }}</div>
     </div>
+</div>
+
+<div class="app-layout" style="display: flex; height: 100vh; overflow: hidden;">
+
 
     <!-- Sidebar con Equipo y Acciones -->
     <aside class="sidebar">
+        <!-- Logo Muralia Rediseñado -->
+        <div class="muralia-logo-container">
+            <span class="muralia-logo-text">Muralia</span>
+            <div class="muralia-logo-dot"></div>
+        </div>
         <!-- Botón de Volver -->
         <div class="sidebar-back">
             <button class="btn-back-mural" routerLink="/boards">
-                ← Mis Tableros
+                <span class="back-icon">‹</span> Mis Tableros
             </button>
         </div>
 
         <div *ngIf="board" class="board-header-info">
             <h1>{{ board.titulo }}</h1>
             <div class="meta-info">
-                <span class="id-badge">tabler...</span>
                 <span class="status-badge">{{ board.privacidad | uppercase }}</span>
             </div>
         </div>
@@ -147,16 +148,17 @@
             (cdkDropListDropped)="soltar($event)">
 
             <div *ngFor="let posit of board.posits" class="note" [class.yellow]="posit.color === '#fef3c7'"
-                [style.background-color]="posit.color" cdkDrag [attr.data-posit-id]="posit.posit_id"
-                (cdkDragMoved)="alMoverDrag($event, posit)" (cdkDragEnded)="alSoltarDrag(posit)"
-                [class.being-moved-remote]="ghosts[posit.posit_id]">
+                [style.background-color]="posit.color" cdkDrag cdkDragHandle [attr.data-posit-id]="posit.posit_id"
+                (cdkDragStarted)="alEmpezarDrag()" (cdkDragMoved)="alMoverDrag($event, posit)"
+                (cdkDragEnded)="alSoltarDrag(posit)" [class.being-moved-remote]="ghosts[posit.posit_id]">
 
                 <div class="custom-placeholder" *cdkDragPlaceholder></div>
 
                 <div class="note-header">
-                    <span class="drag-handle" cdkDragHandle>⋮⋮⋮</span>
+                    <span class="drag-handle">⋮⋮⋮</span>
                     <span class="order-tag">#{{ posit.posicion?.orden }}</span>
-                    <span class="delete-icon" (click)="borrarPosit(posit.posit_id)">🗑️</span>
+                    <span class="delete-icon" (click)="borrarPosit(posit.posit_id); $event.stopPropagation()"
+                        (mousedown)="$event.stopPropagation()">🗑️</span>
                 </div>
 
                 <div class="note-title">{{ posit.titulo }}</div>
@@ -165,11 +167,13 @@
                 <div class="task-list">
                     <div *ngFor="let c of posit.comentarios" class="task-item">
                         {{ c.contenido }}
-                        <span class="close" (click)="borrarComentario(posit.posit_id, c._id)">✖</span>
+                        <span class="close" (click)="borrarComentario(posit.posit_id, c._id); $event.stopPropagation()"
+                            (mousedown)="$event.stopPropagation()">✖</span>
                     </div>
                 </div>
 
-                <div class="btn-comment" (click)="comentar(posit.posit_id)">+ Comentar</div>
+                <div class="btn-comment" (click)="comentar(posit.posit_id)" (mousedown)="$event.stopPropagation()">+
+                    Comentar</div>
             </div>
 
         </div>

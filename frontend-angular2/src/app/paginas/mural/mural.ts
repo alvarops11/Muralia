@@ -7,6 +7,7 @@ import { DragDropModule, CdkDragDrop, CdkDragMove, moveItemInArray } from '@angu
 import { WebsocketService } from '../../../services/websocket.service';
 import { Subscription, Subject } from 'rxjs';
 import { throttleTime } from 'rxjs/operators';
+import { AuthService } from '../../services/auth.service';
 
 import { BuscarPosit } from '../buscar-posit/buscar-posit';
 import { Compartir } from '../compartir/compartir';
@@ -29,6 +30,7 @@ export class Mural implements OnInit, OnDestroy {
   route = inject(ActivatedRoute);
   wsService = inject(WebsocketService);
   private notify = inject(NotificationService);
+  private auth = inject(AuthService);
 
   board: any = null;
   cargando = false;
@@ -37,13 +39,18 @@ export class Mural implements OnInit, OnDestroy {
   // Helper para mostrar nombres reales o IDs
   getMemberName(u: any): string {
     if (!u) return 'Anónimo';
+    // Si es un objeto populado { _id, email, nombre? }
     if (typeof u === 'object') {
       if (u.nombre) return u.nombre;
       if (u.email) return u.email.split('@')[0];
-      return u._id ? (u._id + '').slice(0, 10) : 'Usuario';
+      // Si solo tiene ID, limpiamos el prefijo 'usuario_' si existe
+      let id = u._id || '';
+      return (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
     }
+    // Si es un string (ID o Email)
     const str = u + '';
-    return str.includes('@') ? str.split('@')[0] : str.slice(0, 10);
+    if (str.includes('@')) return str.split('@')[0];
+    return str.replace('usuario_', '').slice(0, 10);
   }
 
   // Modal state
@@ -64,7 +71,7 @@ export class Mural implements OnInit, OnDestroy {
   ghosts: { [key: string]: any } = {};
 
   // Subject para controlar la emisión de eventos de drag (Throttling)
-  private dragSubject = new Subject<any>();
+  private dragSubject = new Subject<{ positId: string, x: number, y: number }>();
 
   ngOnInit() {
     const idUrl = this.route.snapshot.paramMap.get('id');
@@ -90,6 +97,7 @@ export class Mural implements OnInit, OnDestroy {
       // 4. Suscribirse a movimientos de otros (Ghosts)
       this.subs.push(
         this.wsService.onDragMove().subscribe((data: any) => {
+          // console.log('👻 Ghost Move:', data); // Debug
           // Buscamos el original para copiar color/título
           const original = this.board?.posits.find((p: any) => p.posit_id === data.positId);
           if (original) {
@@ -113,11 +121,11 @@ export class Mural implements OnInit, OnDestroy {
         })
       );
 
-      // 6. Configurar Throttling para mis movimientos (máx 1 envío cada 30ms)
+      // 6. Configurar Throttling para mis movimientos (máx 1 envío cada 16ms -> ~60fps)
       this.subs.push(
-        this.dragSubject.pipe(throttleTime(30)).subscribe((pos) => {
-          // 'Yo' es un placeholder. Lo ideal es usar tu AuthService para poner tu nombre real
-          this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, 'Yo');
+        this.dragSubject.pipe(throttleTime(16)).subscribe((pos) => {
+          const name = this.auth.getUserName();
+          this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, name);
         })
       );
 
@@ -163,6 +171,9 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   // --- EVENTOS DRAG LOCALES ---
+  alEmpezarDrag() {
+    this.cd.detectChanges();
+  }
 
   // Se dispara mientras arrastro (Angular CDK)
   alMoverDrag(event: CdkDragMove, posit: any) {

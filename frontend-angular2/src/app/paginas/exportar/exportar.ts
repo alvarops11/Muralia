@@ -54,11 +54,12 @@ export class Exportar {
     this.board?.participantes?.forEach((pt: any) => {
       const u = pt.usuario_id;
       const uId = (typeof u === 'object' && u !== null) ? u._id : u;
-      let uName = uId;
+
+      let uName = 'Anónimo';
       if (typeof u === 'object' && u !== null) {
-        uName = u.nombre || (u.email ? u.email.split('@')[0] : uId);
-      } else if (typeof u === 'string' && u.includes('@')) {
-        uName = u.split('@')[0];
+        uName = u.nombre || (u.email ? u.email.split('@')[0] : (uId + '').replace('usuario_', '').slice(0, 10));
+      } else if (typeof u === 'string') {
+        uName = u.includes('@') ? u.split('@')[0] : u.replace('usuario_', '').slice(0, 10);
       }
       participMap.set(uId, uName || 'Anónimo');
     });
@@ -68,13 +69,17 @@ export class Exportar {
       const row: any[] = [p.contenido];
       if (this.opciones.incluirAutor) {
         const u = p.autor_id;
-        let uName = 'Anónimo';
-        if (typeof u === 'object' && u !== null) {
-          uName = u.nombre || (u.email ? u.email.split('@')[0] : (u._id || 'Anónimo'));
-        } else if (typeof u === 'string') {
-          uName = u.includes('@') ? u.split('@')[0] : (participMap.get(u) || u);
+        const uId = (typeof u === 'object' && u !== null) ? u._id : u;
+        let uName = participMap.get(uId);
+
+        if (!uName) {
+          if (typeof u === 'object' && u !== null) {
+            uName = u.nombre || (u.email ? u.email.split('@')[0] : (uId + '').replace('usuario_', '').slice(0, 10));
+          } else if (typeof u === 'string') {
+            uName = u.includes('@') ? u.split('@')[0] : u.replace('usuario_', '').slice(0, 10);
+          }
         }
-        row.push(uName);
+        row.push(uName || 'Anónimo');
       }
       if (this.opciones.incluirFechas) row.push(new Date(p.fecha_creacion).toLocaleDateString());
       if (this.opciones.incluirComentarios) {

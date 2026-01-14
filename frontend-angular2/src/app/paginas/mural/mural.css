@@ -780,147 +780,172 @@ body {
 }
 
 /* --- 8. MODAL DE CREACIÓN (MIGRADOS) --- */
+/* --- 8. MODAL DE CREACIÓN (PREMIUM REDESIGN) --- */
 .modal-overlay-mural {
     position: fixed;
     inset: 0;
     background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(4px);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
-    animation: fadeIn 0.2s;
+    animation: fadeIn 0.3s ease;
 }
 
 .modal-popup-mural {
     background: white;
-    border-radius: 8px;
+    border-radius: 20px;
     width: 90%;
     max-width: 600px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     overflow: hidden;
+    animation: slideUp 0.3s ease;
 }
 
 .modal-header-creation {
-    background: #5B6ED9;
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
     color: white;
-    padding: 20px 30px;
+    padding: 24px 30px;
 }
 
 .modal-header-creation h2 {
     margin: 0;
-    font-size: 1.5rem;
-    font-weight: 600;
+    font-size: 20px;
+    font-weight: 700;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .modal-body-creation {
-    padding: 30px;
+    padding: 30px 40px;
 }
 
 .form-label-mural {
     display: block;
-    font-size: 1rem;
-    font-weight: 500;
-    color: #111;
-    margin-bottom: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    color: #4a5568;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .attachment-label {
-    margin-top: 20px;
+    margin-top: 24px;
 }
 
 .form-textarea-mural {
     width: 100%;
-    padding: 15px;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.95rem;
-    font-family: inherit;
+    padding: 14px 16px;
+    font-size: 15px;
+    color: #2d3748;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    box-sizing: border-box;
+    font-family: 'Roboto', sans-serif;
     resize: vertical;
-    background: #f9fafb;
+    transition: all 0.2s;
+    min-height: 120px;
+}
+
+.form-textarea-mural:focus {
+    outline: none;
+    background-color: white;
+    border-color: #5570f1;
+    box-shadow: 0 0 0 3px rgba(85, 112, 241, 0.1);
 }
 
 .form-textarea-mural::placeholder {
-    color: #9ca3af;
+    color: #a0aec0;
 }
 
 .color-picker-mural {
     display: flex;
     gap: 15px;
-    margin-bottom: 20px;
+    margin-bottom: 24px;
 }
 
 .color-option-mural {
-    width: 50px;
-    height: 50px;
-    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
     cursor: pointer;
-    border: 3px solid transparent;
-    transition: all 0.2s;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 
 .color-option-mural:hover {
-    transform: scale(1.1);
+    transform: scale(1.15);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .color-option-mural.selected {
-    border-color: #4f46e5;
-    box-shadow: 0 0 0 2px white, 0 0 0 4px #4f46e5;
+    border-color: #5570f1;
+    box-shadow: 0 0 0 3px white, 0 0 0 5px #5570f1;
+    transform: scale(1.1);
 }
 
 .file-button-mural {
     width: 100%;
-    padding: 12px;
-    background: #f3f4f6;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
-    font-size: 0.9rem;
-    color: #6b7280;
+    padding: 14px;
+    background: #f7fafc;
+    border: 1px dashed #cbd5e0;
+    border-radius: 12px;
+    font-size: 14px;
+    color: #4a5568;
     cursor: pointer;
-    text-align: left;
+    text-align: center;
+    transition: all 0.2s;
+    font-weight: 500;
 }
 
 .file-button-mural:hover {
-    background: #e5e7eb;
+    background: #edf2f7;
+    border-color: #5570f1;
+    color: #5570f1;
 }
 
 .modal-footer-mural {
-    padding: 20px 30px;
+    padding: 0 40px 40px;
     display: flex;
     gap: 15px;
+    justify-content: flex-end;
 }
 
 .btn-save-mural {
-    flex: 1;
-    padding: 12px;
-    background: #5B6ED9;
+    padding: 14px 24px;
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
     color: white;
     border: none;
-    border-radius: 6px;
-    font-weight: 600;
-    font-size: 1rem;
+    border-radius: 12px;
+    font-weight: 700;
+    font-size: 15px;
     cursor: pointer;
-    transition: background 0.2s;
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.3);
+    transition: all 0.2s;
 }
 
 .btn-save-mural:hover {
-    background: #4c5ec4;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(85, 112, 241, 0.4);
 }
 
 .btn-cancel-mural {
-    flex: 1;
-    padding: 12px;
-    background: #e5e7eb;
-    color: #374151;
+    padding: 14px 24px;
+    background: #edf2f7;
+    color: #4a5568;
     border: none;
-    border-radius: 6px;
+    border-radius: 12px;
     font-weight: 600;
-    font-size: 1rem;
+    font-size: 15px;
     cursor: pointer;
-    transition: background 0.2s;
+    transition: all 0.2s;
 }
 
 .btn-cancel-mural:hover {
-    background: #d1d5db;
+    background: #e2e8f0;
+    color: #2d3748;
 }
 
 /* Modal de Búsqueda */

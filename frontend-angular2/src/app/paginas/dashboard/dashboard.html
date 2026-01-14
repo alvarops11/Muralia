@@ -1,6 +1,12 @@
 <header class="header">
-    <h1>Murales</h1>
-    <div class="user-name">{{ userName }}</div>
+    <div class="muralia-logo-container">
+        <span class="muralia-logo-text">Muralia</span>
+        <div class="muralia-logo-dot"></div>
+    </div>
+    <div class="user-profile">
+        <div class="avatar-circle">{{ userName.charAt(0).toUpperCase() }}</div>
+        <div class="user-name">{{ userName }}</div>
+    </div>
 </header>
 
 <div class="main-container">
@@ -46,7 +52,6 @@
                 </span>
             </div>
             <div class="card-footer">
-                <span class="project-id">ID: {{ board._id.substring(0, 8) }}...</span>
                 <span class="delete-icon" (click)="deleteBoard(board, $event)">🗑️</span>
             </div>
         </div>

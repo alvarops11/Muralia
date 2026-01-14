@@ -60,7 +60,7 @@ export class Mural implements OnInit, OnDestroy {
   mostrarExportar = false;
   mostrarEstadisticas = false;
   guardandoPosit = false;
-  nuevoPosit = { contenido: '', color: '#fef3c7' };
+  nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
   coloresDisponibles = ['#fef3c7', '#a5f3fc', '#fbcfe8', '#bbf7d0', '#fed7aa'];
 
   // -- Control de Sockets y Ghosts --
@@ -226,7 +226,7 @@ export class Mural implements OnInit, OnDestroy {
 
   abrirModal() {
     this.mostrarModal = true;
-    this.nuevoPosit = { contenido: '', color: '#fef3c7' };
+    this.nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
   }
 
   cerrarModal() {
@@ -242,7 +242,7 @@ export class Mural implements OnInit, OnDestroy {
 
     this.guardandoPosit = true;
     this.api.createPosit(this.id, {
-      titulo: this.nuevoPosit.contenido.substring(0, 30) + (this.nuevoPosit.contenido.length > 30 ? '...' : ''),
+      titulo: this.nuevoPosit.titulo.trim() || (this.nuevoPosit.contenido.substring(0, 30) + (this.nuevoPosit.contenido.length > 30 ? '...' : '')),
       contenido: this.nuevoPosit.contenido,
       color: this.nuevoPosit.color,
       orden: 0

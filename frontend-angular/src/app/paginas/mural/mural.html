@@ -6,6 +6,10 @@
         </div>
 
         <div class="modal-body-creation">
+            <label class="form-label-mural">Título</label>
+            <input [(ngModel)]="nuevoPosit.titulo" class="form-input-mural"
+                placeholder="Título de la nota (opcional)..." type="text">
+
             <label class="form-label-mural">Contenido *</label>
             <textarea [(ngModel)]="nuevoPosit.contenido" class="form-textarea-mural"
                 placeholder="Escribe tu idea, nota o comentario..." rows="6"></textarea>

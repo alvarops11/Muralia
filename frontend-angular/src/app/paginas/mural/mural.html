@@ -171,7 +171,8 @@
                             (click)="abrirEditar(posit); $event.stopPropagation()"
                             (mousedown)="$event.stopPropagation()">✏️</span>
 
-                        <span class="delete-icon" (click)="borrarPosit(posit.posit_id); $event.stopPropagation()"
+                        <span class="delete-icon" [class.disabled]="locks[posit.posit_id]"
+                            (click)="borrarPosit(posit.posit_id); $event.stopPropagation()"
                             (mousedown)="$event.stopPropagation()">🗑️</span>
                     </div>
                 </div>
@@ -184,7 +185,7 @@
                 </div>
 
                 <div class="btn-comment" (click)="abrirComentarios(posit); $event.stopPropagation()">
-                    💬 Comentarios 
+                    💬 Comentarios
                     <span *ngIf="posit.comentarios?.length" class="comment-badge">{{ posit.comentarios.length }}</span>
                 </div>
             </div>
@@ -200,7 +201,8 @@
         <div class="comments-panel-header">
             <div class="comments-header-info">
                 <h3>💬 Comentarios</h3>
-                <span *ngIf="positComentarios" class="posit-title-badge">{{ positComentarios.titulo || 'Sin título' }}</span>
+                <span *ngIf="positComentarios" class="posit-title-badge">{{ positComentarios.titulo || 'Sin título'
+                    }}</span>
             </div>
             <button class="close-comments-btn" (click)="cerrarComentarios()">×</button>
         </div>
@@ -211,7 +213,8 @@
                     <div class="comment-content">
                         <div class="comment-header">
                             <span class="comment-author">👤 {{ getMemberName(c.usuario_id) }}</span>
-                            <button class="delete-comment-btn" (click)="borrarComentario(positComentarios.posit_id, c._id)"
+                            <button class="delete-comment-btn"
+                                (click)="borrarComentario(positComentarios.posit_id, c._id)"
                                 title="Borrar comentario">🗑️</button>
                         </div>
                         <p class="comment-text">{{ c.contenido }}</p>
@@ -219,7 +222,8 @@
                     </div>
                 </div>
 
-                <div *ngIf="!positComentarios.comentarios || positComentarios.comentarios.length === 0" class="no-comments">
+                <div *ngIf="!positComentarios.comentarios || positComentarios.comentarios.length === 0"
+                    class="no-comments">
                     <p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
                 </div>
             </div>

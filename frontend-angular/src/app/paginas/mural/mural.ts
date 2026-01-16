@@ -389,6 +389,11 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   async borrarPosit(pid: string) {
+    if (this.locks[pid]) {
+      this.notify.error(`🔒 Este posit está siendo editado por ${this.locks[pid]}`);
+      return;
+    }
+
     if (this.id && await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar este posit? Esta acción no se puede deshacer y se perderá toda la información del posit.")) {
       this.api.deletePosit(this.id, pid).subscribe(() => this.cargar());
     }

@@ -11,24 +11,49 @@ import { FormsModule } from '@angular/forms';
 })
 export class BuscarPosit {
   @Input() posits: any[] = [];
+  @Input() board: any = null; // Recibir el board completo para acceder a participantes
   @Output() cerrar = new EventEmitter<void>();
   @Output() irAlPosit = new EventEmitter<string>();
 
   terminoBusqueda: string = '';
   filtroActual: string = 'Todos';
 
+  // Helper para obtener nombre del usuario
+  getMemberName(u: any): string {
+    if (!u) return 'Anónimo';
+    // Si es un objeto populado { _id, email, nombre? }
+    if (typeof u === 'object') {
+      if (u.nombre) return u.nombre;
+      if (u.email) return u.email.split('@')[0];
+      // Si solo tiene ID, limpiamos el prefijo 'usuario_' si existe
+      let id = u._id || '';
+      return (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
+    }
+    // Si es un string (ID o Email)
+    const str = u + '';
+    if (str.includes('@')) return str.split('@')[0];
+    return str.replace('usuario_', '').slice(0, 10);
+  }
+
+  // Obtener nombre del autor de un posit
+  getAutorName(posit: any): string {
+    return this.getMemberName(posit.autor_id);
+  }
+
   get resultadosFiltrados() {
     if (!this.posits) return [];
 
     let filtrados = this.posits;
 
-    // Filtrar por término de búsqueda
+    // Filtrar por término de búsqueda (título, contenido y autor)
     if (this.terminoBusqueda.trim()) {
       const t = this.terminoBusqueda.toLowerCase();
-      filtrados = filtrados.filter(p =>
-        (p.titulo || '').toLowerCase().includes(t) ||
-        (p.contenido || '').toLowerCase().includes(t)
-      );
+      filtrados = filtrados.filter(p => {
+        const tituloMatch = (p.titulo || '').toLowerCase().includes(t);
+        const contenidoMatch = (p.contenido || '').toLowerCase().includes(t);
+        const autorMatch = this.getAutorName(p).toLowerCase().includes(t);
+        return tituloMatch || contenidoMatch || autorMatch;
+      });
     }
 
     // Filtrar por categoría

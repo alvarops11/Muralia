@@ -146,8 +146,18 @@
     font-weight: 600;
 }
 
+.collab-stats {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .collab-count {
     font-size: 14px;
     color: #4a5568;
     font-weight: 600;
+}
+
+.collab-count.comment-count {
+    color: #10b981;
 }

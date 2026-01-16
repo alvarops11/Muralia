@@ -3,9 +3,19 @@
         <span class="muralia-logo-text">Muralia</span>
         <div class="muralia-logo-dot"></div>
     </div>
-    <div class="user-profile">
-        <div class="avatar-circle">{{ userName.charAt(0).toUpperCase() }}</div>
-        <div class="user-name">{{ userName }}</div>
+    <div class="user-profile-container">
+        <div class="user-profile" (click)="toggleUserMenu(); $event.stopPropagation()">
+            <div class="avatar-circle">{{ userName.charAt(0).toUpperCase() }}</div>
+            <div class="user-name">{{ userName }}</div>
+            <div class="dropdown-icon">▼</div>
+        </div>
+        <div class="user-menu" *ngIf="showUserMenu" (click)="$event.stopPropagation()">
+            <button class="menu-item logout-btn" (click)="logout()">
+                <span class="menu-icon">🚪</span>
+                <span>Cerrar sesión</span>
+            </button>
+        </div>
+        <div class="menu-overlay" *ngIf="showUserMenu" (click)="closeUserMenu()"></div>
     </div>
 </header>
 

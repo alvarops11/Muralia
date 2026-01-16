@@ -77,6 +77,9 @@ body {
     flex-direction: column;
     padding: 20px;
     border-right: 1px solid #ddd;
+    overflow-x: hidden;
+    overflow-y: auto;
+    min-width: 0;
 }
 
 /* Cabecera del Tablero en Sidebar */
@@ -114,6 +117,8 @@ body {
 
 .board-header-info {
     margin-bottom: 25px;
+    overflow: hidden;
+    word-wrap: break-word;
 }
 
 .board-header-info h1 {
@@ -123,6 +128,10 @@ body {
     color: #1a1a1b;
     letter-spacing: -0.5px;
     line-height: 1.1;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+    word-break: break-word;
+    max-width: 100%;
 }
 
 .meta-info {

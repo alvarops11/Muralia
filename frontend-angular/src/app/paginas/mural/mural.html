@@ -10,7 +10,7 @@
             <input [(ngModel)]="nuevoPosit.titulo" class="form-input-mural"
                 placeholder="Título de la nota (opcional)..." type="text">
 
-            <label class="form-label-mural">Contenido *</label>
+            <label class="form-label-mural">Contenido</label>
             <textarea [(ngModel)]="nuevoPosit.contenido" class="form-textarea-mural"
                 placeholder="Escribe tu idea, nota o comentario..." rows="6"></textarea>
 
@@ -39,7 +39,7 @@
 <!-- Modal de Búsqueda (Migrado) -->
 <div *ngIf="mostrarBuscar" class="modal-overlay-mural" (click)="cerrarBuscar()">
     <div class="modal-popup-search" (click)="$event.stopPropagation()">
-        <app-buscar-posit [posits]="board?.posits" (cerrar)="cerrarBuscar()"
+        <app-buscar-posit [posits]="board?.posits" [board]="board" (cerrar)="cerrarBuscar()"
             (irAlPosit)="navegarAPosit($event)"></app-buscar-posit>
         <!-- Botón Cerrar removido: ya hay X en el header -->
     </div>

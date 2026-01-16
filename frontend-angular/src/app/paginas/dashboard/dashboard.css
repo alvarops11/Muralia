@@ -71,6 +71,10 @@ body {
 }
 
 /* PERFIL DE USUARIO */
+.user-profile-container {
+    position: relative;
+}
+
 .user-profile {
     display: flex;
     align-items: center;
@@ -81,12 +85,29 @@ body {
     border: 1px solid rgba(0, 0, 0, 0.05);
     transition: all 0.2s ease;
     cursor: pointer;
+    position: relative;
+    z-index: 100;
 }
 
 .user-profile:hover {
     background: white;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transform: translateY(-1px);
+}
+
+.dropdown-icon {
+    font-size: 10px;
+    color: #6b7280;
+    transition: transform 0.2s ease;
+    margin-left: 4px;
+}
+
+.user-profile:hover .dropdown-icon {
+    color: #5570f1;
+}
+
+.user-profile-container[data-open="true"] .dropdown-icon {
+    transform: rotate(180deg);
 }
 
 .avatar-circle {
@@ -106,7 +127,78 @@ body {
     font-size: 14px;
     font-weight: 700;
     color: #2d3748;
-    padding-right: 8px;
+    padding-right: 4px;
+}
+
+/* MENÚ CONTEXTUAL DE USUARIO */
+.user-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    min-width: 200px;
+    z-index: 1000;
+    overflow: hidden;
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.menu-item {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: #374151;
+    transition: all 0.2s ease;
+    text-align: left;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.menu-item:last-child {
+    border-bottom: none;
+}
+
+.menu-item:hover {
+    background: #f9fafb;
+    color: #1f2937;
+}
+
+.menu-item.logout-btn:hover {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.menu-icon {
+    font-size: 16px;
+}
+
+.menu-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99;
+    background: transparent;
 }
 
 /* --- 2. ZONA PRINCIPAL --- */

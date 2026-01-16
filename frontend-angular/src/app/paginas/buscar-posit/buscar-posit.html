@@ -12,7 +12,7 @@
             <div class="search-input-wrapper">
                 <span class="search-icon">🔍</span>
                 <input type="text" [(ngModel)]="terminoBusqueda" class="search-input"
-                    placeholder="Buscar por palabra clave o contenido...">
+                    placeholder="Buscar por título, contenido o usuario...">
                 <span *ngIf="terminoBusqueda" class="clear-search" (click)="terminoBusqueda = ''">×</span>
             </div>
             <button class="btn-search-action">🔍</button>
@@ -41,8 +41,9 @@
                     <h4 class="result-title">{{ posit.titulo }}</h4>
                     <p class="result-desc">{{ posit.contenido | slice:0:100 }}{{ posit.contenido.length > 100 ? '...' :
                         '' }}</p>
-                    <div class="result-meta" *ngIf="posit.comentarios?.length">
-                        <span>💬 {{ posit.comentarios.length }} comentarios</span>
+                    <div class="result-meta">
+                        <span class="meta-author">👤 {{ getAutorName(posit) }}</span>
+                        <span *ngIf="posit.comentarios?.length" class="meta-comments">💬 {{ posit.comentarios.length }} comentarios</span>
                     </div>
                 </div>
                 <button class="btn-ver" (click)="seleccionar(posit.posit_id)">Ver en Tablero</button>

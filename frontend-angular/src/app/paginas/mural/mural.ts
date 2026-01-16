@@ -283,7 +283,7 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   guardarPosit() {
-    if (!this.id || !this.nuevoPosit.contenido.trim() || this.guardandoPosit) return;
+    if (!this.id || this.guardandoPosit) return;
 
     this.guardandoPosit = true;
 
@@ -291,7 +291,7 @@ export class Mural implements OnInit, OnDestroy {
       // Editar
       this.api.updatePosit(this.id, this.editPositId, {
         titulo: this.nuevoPosit.titulo.trim(),
-        contenido: this.nuevoPosit.contenido,
+        contenido: this.nuevoPosit.contenido || '',
         color: this.nuevoPosit.color
       }).subscribe({
         next: () => {
@@ -308,9 +308,10 @@ export class Mural implements OnInit, OnDestroy {
       });
     } else {
       // Crear
+      const contenido = this.nuevoPosit.contenido || '';
       this.api.createPosit(this.id, {
-        titulo: this.nuevoPosit.titulo.trim() || (this.nuevoPosit.contenido.substring(0, 30) + (this.nuevoPosit.contenido.length > 30 ? '...' : '')),
-        contenido: this.nuevoPosit.contenido,
+        titulo: this.nuevoPosit.titulo.trim() || (contenido ? (contenido.substring(0, 30) + (contenido.length > 30 ? '...' : '')) : 'Nota sin título'),
+        contenido: contenido,
         color: this.nuevoPosit.color,
         orden: 0
       }).subscribe({
@@ -334,20 +335,69 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   async borrarPosit(pid: string) {
-    if (this.id && await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar este posit?")) {
+    if (this.id && await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar este posit? Esta acción no se puede deshacer y se perderá toda la información del posit.")) {
       this.api.deletePosit(this.id, pid).subscribe(() => this.cargar());
     }
   }
 
   async comentar(pid: string) {
-    const t = await this.notify.prompt("💬 Escribe tu comentario:");
-    if (t && this.id) {
-      this.api.addComment(this.id, pid, t).subscribe(() => this.cargar());
+    const t = await this.notify.prompt("💬 ¿Qué quieres comentar?");
+    if (t && this.id && this.board) {
+      // Actualización optimista: agregar el comentario inmediatamente
+      const posit = this.board.posits.find((p: any) => p.posit_id === pid);
+      if (posit) {
+        // Obtener usuario del board actual si está disponible
+        const currentUser = this.board.participantes?.find((p: any) => {
+          const userId = p.usuario_id?._id || p.usuario_id;
+          return userId; // El primero debería ser el actual en algunos casos, pero mejor dejarlo así
+        });
+        const userId = currentUser?.usuario_id?._id || currentUser?.usuario_id || null;
+        
+        const nuevoComentario = {
+          _id: 'temp_' + Date.now(), // ID temporal
+          usuario_id: userId || { email: this.auth.getUserName() },
+          contenido: t,
+          fecha: new Date()
+        };
+        
+        // Agregar el comentario localmente de inmediato
+        if (!posit.comentarios) {
+          posit.comentarios = [];
+        }
+        posit.comentarios.push(nuevoComentario);
+        this.cd.detectChanges();
+        
+        // Enviar al backend
+        this.api.addComment(this.id, pid, t).subscribe({
+          next: (response: any) => {
+            // La respuesta del backend tiene el board actualizado
+            // Actualizamos solo el posit específico para mantener el orden
+            if (response.board) {
+              const updatedPosit = response.board.posits.find((p: any) => p.posit_id === pid);
+              if (updatedPosit && posit) {
+                posit.comentarios = updatedPosit.comentarios || [];
+                this.cd.detectChanges();
+              }
+            }
+          },
+          error: () => {
+            // Si falla, revertir el cambio
+            if (posit.comentarios) {
+              const index = posit.comentarios.findIndex((c: any) => c._id === nuevoComentario._id);
+              if (index !== -1) {
+                posit.comentarios.splice(index, 1);
+                this.cd.detectChanges();
+              }
+            }
+            this.notify.error("❌ Error al agregar el comentario");
+          }
+        });
+      }
     }
   }
 
   async borrarComentario(pid: string, cid: string) {
-    if (this.id && await this.notify.confirm("🗑️ ¿Borrar comentario?")) {
+    if (this.id && await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar este comentario? Esta acción no se puede deshacer.")) {
       this.api.deleteComment(this.id, pid, cid).subscribe(() => this.cargar());
     }
   }

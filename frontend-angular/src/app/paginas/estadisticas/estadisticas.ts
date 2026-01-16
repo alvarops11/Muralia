@@ -57,29 +57,60 @@ export class Estadisticas {
       userStatsMap.set(uId, {
         name: this.getMemberName(u),
         role: p.permiso,
-        postCount: 0
+        postCount: 0,
+        commentCount: 0
       });
     });
 
-    // 2. Contar posts por autor
+    // 2. Contar posts y comentarios por usuario
     this.board.posits?.forEach((p: any) => {
-      const u = p.autor_id;
-      if (!u) return;
+      // Contar posts por autor
+      const autor = p.autor_id;
+      if (autor) {
+        const autorId = (typeof autor === 'object' && autor !== null) ? autor._id : autor;
 
-      const uId = (typeof u === 'object' && u !== null) ? u._id : u;
+        if (userStatsMap.has(autorId)) {
+          userStatsMap.get(autorId).postCount++;
+        } else {
+          // Alguien que no está en la lista de participantes
+          userStatsMap.set(autorId, {
+            name: this.getMemberName(autor),
+            role: 'Colaborador',
+            postCount: 1,
+            commentCount: 0
+          });
+        }
+      }
 
-      if (userStatsMap.has(uId)) {
-        userStatsMap.get(uId).postCount++;
-      } else {
-        // Alguien que no está en la lista de participantes
-        userStatsMap.set(uId, {
-          name: this.getMemberName(u),
-          role: 'Colaborador',
-          postCount: 1
+      // Contar comentarios por autor de comentario
+      if (p.comentarios && p.comentarios.length > 0) {
+        p.comentarios.forEach((c: any) => {
+          const comentarioAutor = c.usuario_id;
+          if (!comentarioAutor) return;
+
+          const comentarioAutorId = (typeof comentarioAutor === 'object' && comentarioAutor !== null) 
+            ? comentarioAutor._id 
+            : comentarioAutor;
+
+          if (userStatsMap.has(comentarioAutorId)) {
+            userStatsMap.get(comentarioAutorId).commentCount++;
+          } else {
+            // Usuario que solo ha comentado pero no es participante
+            userStatsMap.set(comentarioAutorId, {
+              name: this.getMemberName(comentarioAutor),
+              role: 'Colaborador',
+              postCount: 0,
+              commentCount: 1
+            });
+          }
         });
       }
     });
 
-    return Array.from(userStatsMap.values()).sort((a, b) => b.postCount - a.postCount);
+    return Array.from(userStatsMap.values()).sort((a, b) => {
+      const totalA = a.postCount + a.commentCount;
+      const totalB = b.postCount + b.commentCount;
+      return totalB - totalA;
+    });
   }
 }

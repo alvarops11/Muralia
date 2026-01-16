@@ -213,10 +213,21 @@
 }
 
 .result-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
     font-size: 12px;
-    color: #5C6BC0;
+    color: #6b7280;
     font-weight: 500;
     margin-top: 5px;
+}
+
+.meta-author {
+    color: #5C6BC0;
+}
+
+.meta-comments {
+    color: #10b981;
 }
 
 .btn-ver {

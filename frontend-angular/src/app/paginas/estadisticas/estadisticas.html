@@ -35,7 +35,10 @@
                         <span class="collab-icon">👤</span>
                         <span class="collab-name">{{ user.name }} ({{ user.role }})</span>
                     </div>
-                    <span class="collab-count">{{ user.postCount }} posts</span>
+                    <div class="collab-stats">
+                        <span class="collab-count">{{ user.postCount }} posts</span>
+                        <span class="collab-count comment-count">💬 {{ user.commentCount }} comentarios</span>
+                    </div>
                 </div>
 
                 <div *ngIf="statsByUser.length === 0" class="collaborator-item" style="justify-content: center;">

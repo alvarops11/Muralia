@@ -1,4 +1,4 @@
-import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
+import { Component, OnInit, inject, ChangeDetectorRef, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -42,6 +42,9 @@ export class Dashboard implements OnInit {
   newBoardTitle = '';
   newBoardDescription = '';
   newBoardPrivacy: 'publico' | 'privado' = 'privado';
+
+  // User Menu State
+  showUserMenu = false;
 
 
   ngOnInit() {
@@ -157,5 +160,27 @@ export class Dashboard implements OnInit {
     return this.boards.filter(board =>
       board.titulo.toLowerCase().includes(term)
     );
+  }
+
+  toggleUserMenu() {
+    this.showUserMenu = !this.showUserMenu;
+  }
+
+  closeUserMenu() {
+    this.showUserMenu = false;
+  }
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: Event) {
+    if (this.showUserMenu) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.user-profile-container')) {
+        this.closeUserMenu();
+      }
+    }
+  }
+
+  logout() {
+    this.auth.logout();
   }
 }

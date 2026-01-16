@@ -41,16 +41,15 @@
     <div class="modal-popup-search" (click)="$event.stopPropagation()">
         <app-buscar-posit [posits]="board?.posits" (cerrar)="cerrarBuscar()"
             (irAlPosit)="navegarAPosit($event)"></app-buscar-posit>
-        <button class="btn-close-search" (click)="cerrarBuscar()">Cerrar</button>
+        <!-- Botón Cerrar removido: ya hay X en el header -->
     </div>
 </div>
 
 <!-- Modal de Compartir -->
 <div *ngIf="mostrarCompartir" class="modal-overlay-mural" (click)="cerrarCompartir()">
     <app-compartir [boardId]="board?._id" [participantes]="board?.participantes || []" (onInvite)="invitar($event)"
-        (onRemove)="echarlo($event)" (click)="$event.stopPropagation()"
+        (onRemove)="echarlo($event)" (onClose)="cerrarCompartir()" (click)="$event.stopPropagation()"
         style="width: 100%; max-width: 600px; display: flex; justify-content: center;"></app-compartir>
-    <button class="btn-close-share" (click)="cerrarCompartir()">Cerrar</button>
 </div>
 
 <!-- Modal de Exportar -->
@@ -59,16 +58,15 @@
         (click)="$event.stopPropagation()">
         <app-exportar [board]="board" (onClose)="cerrarExportar()" style="width: 100%;"></app-exportar>
     </div>
-    <button class="btn-close-share" (click)="cerrarExportar()">Cerrar</button>
+    <!-- Botón Cerrar removido: ya hay botón Cancelar en el footer -->
 </div>
 
 <!-- Modal de Estadísticas -->
 <div *ngIf="mostrarEstadisticas" class="modal-overlay-mural" (click)="cerrarEstadisticas()">
     <div style="width: 100%; max-width: 600px; display: flex; justify-content: center;"
         (click)="$event.stopPropagation()">
-        <app-estadisticas [board]="board" style="width: 100%;"></app-estadisticas>
+        <app-estadisticas [board]="board" (onClose)="cerrarEstadisticas()" style="width: 100%;"></app-estadisticas>
     </div>
-    <button class="btn-close-share" (click)="cerrarEstadisticas()">Cerrar</button>
 </div>
 
 
@@ -186,7 +184,11 @@
                     </div>
                 </div>
 
-                <div class="btn-comment" (click)="comentar(posit.posit_id)" (mousedown)="$event.stopPropagation()">+
+                <div class="note-author">
+                    👤 {{ getMemberName(posit.autor_id) }}
+                </div>
+
+                <div class="btn-comment" (click)="comentar(posit.posit_id); $event.stopPropagation()">+
                     Comentar</div>
             </div>
 

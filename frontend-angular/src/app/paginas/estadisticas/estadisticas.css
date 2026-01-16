@@ -1,41 +1,54 @@
 .modal-container {
-    background-color: #E0E0E0;
+    background-color: white;
     width: 100%;
     max-width: 600px;
     min-width: 450px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     overflow: hidden;
-    border: 1px solid #ccc;
 }
 
 /* --- Encabezado --- */
 .modal-header {
-    background-color: #5C6BC0;
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
     color: white;
-    padding: 15px 25px;
+    padding: 24px 30px;
     display: flex;
     align-items: center;
+    justify-content: space-between;
     gap: 10px;
+}
+
+.close-modal-x {
+    font-size: 24px;
+    cursor: pointer;
+    opacity: 0.9;
+    color: white;
+    transition: opacity 0.2s;
+}
+
+.close-modal-x:hover {
+    opacity: 1;
 }
 
 .modal-header h3 {
     margin: 0;
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-icon {
-    font-size: 20px;
+    font-size: 24px;
 }
 
 /* --- Cuerpo --- */
 .modal-body {
-    padding: 25px;
+    padding: 30px 40px;
     display: flex;
     flex-direction: column;
     gap: 30px;
-    /* Espacio entre las tarjetas y la lista */
 }
 
 /* --- Tarjetas de Resumen (Stats) --- */
@@ -46,29 +59,37 @@
 }
 
 .stat-card {
-    background-color: #E0F7FA;
-    /* Cyan claro */
-    border: 1px solid #B2EBF2;
-    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(108, 92, 231, 0.1), rgba(85, 112, 241, 0.1));
+    border: 1px solid rgba(108, 92, 231, 0.2);
+    border-radius: 12px;
     padding: 20px;
     flex: 1;
-    /* Las 3 tarjetas ocupan el mismo ancho */
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 5px;
+    transition: all 0.2s;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.2);
 }
 
 .stat-number {
-    font-size: 24px;
-    font-weight: 500;
-    color: #333;
+    font-size: 28px;
+    font-weight: 700;
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
 }
 
 .stat-label {
     font-size: 14px;
-    color: #555;
+    color: #4a5568;
+    font-weight: 600;
 }
 
 /* --- Lista de Actividad --- */
@@ -94,14 +115,18 @@
 .collaborator-item {
     background-color: white;
     padding: 15px 20px;
-    border-radius: 8px;
-    border: 1px solid #ccc;
-    /* Borde suave */
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
     display: flex;
     justify-content: space-between;
-    /* Separa nombre a la izq y contador a la der */
     align-items: center;
-    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s;
+}
+
+.collaborator-item:hover {
+    border-color: #cbd5e0;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);
 }
 
 .collab-info {
@@ -111,16 +136,18 @@
 }
 
 .collab-icon {
-    color: #5C6BC0;
+    color: #5570f1;
     font-size: 18px;
 }
 
 .collab-name {
     font-size: 16px;
-    color: #333;
+    color: #2d3748;
+    font-weight: 600;
 }
 
 .collab-count {
     font-size: 14px;
-    color: #333;
+    color: #4a5568;
+    font-weight: 600;
 }

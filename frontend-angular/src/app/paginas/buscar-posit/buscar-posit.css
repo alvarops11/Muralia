@@ -1,19 +1,17 @@
 /* --- Configuración General --- */
 .modal-container {
-    background-color: #E0E0E0;
-    /* Gris de fondo del modal */
+    background-color: white;
     width: 650px;
-    border-radius: 12px;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    border-radius: 20px;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     overflow: hidden;
 }
 
 /* --- Encabezado --- */
 .modal-header {
-    background-color: #5C6BC0;
-    /* Azul */
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
     color: white;
-    padding: 15px 20px;
+    padding: 24px 30px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -23,7 +21,8 @@
 .close-modal-x {
     font-size: 24px;
     cursor: pointer;
-    opacity: 0.7;
+    opacity: 0.9;
+    color: white;
     transition: opacity 0.2s;
 }
 
@@ -33,20 +32,23 @@
 
 .modal-header h3 {
     margin: 0;
-    font-size: 18px;
-    font-weight: 500;
+    font-size: 20px;
+    font-weight: 700;
+    color: white;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .header-icon {
-    font-size: 20px;
+    font-size: 24px;
 }
 
 /* --- Cuerpo del Modal --- */
 .modal-body {
-    padding: 25px;
+    padding: 30px 40px;
     display: flex;
     flex-direction: column;
     gap: 20px;
+    background: white;
 }
 
 /* --- 1. Buscador --- */
@@ -71,12 +73,21 @@
 
 .search-input {
     width: 100%;
-    padding: 12px 35px 12px 40px;
-    /* Espacio para ambos iconos */
-    border-radius: 6px;
-    border: 1px solid #aaa;
+    padding: 14px 35px 14px 40px;
+    border-radius: 12px;
+    font-size: 15px;
+    color: #2d3748;
+    background-color: #f7fafc;
+    border: 1px solid #e2e8f0;
+    font-family: 'Roboto', sans-serif;
+    transition: all 0.2s;
     outline: none;
-    font-size: 16px;
+}
+
+.search-input:focus {
+    background-color: white;
+    border-color: #5570f1;
+    box-shadow: 0 0 0 3px rgba(85, 112, 241, 0.1);
 }
 
 .clear-search {
@@ -93,15 +104,23 @@
 }
 
 .btn-search-action {
-    background-color: #D6D6D6;
-    border: 1px solid #999;
-    border-radius: 6px;
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
+    color: white;
+    border: none;
+    border-radius: 12px;
     width: 46px;
     cursor: pointer;
     font-size: 18px;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.3);
+    transition: all 0.2s;
+}
+
+.btn-search-action:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(85, 112, 241, 0.4);
 }
 
 /* --- 2. Filtros (Chips) --- */
@@ -114,23 +133,25 @@
 .filter-chip {
     padding: 8px 16px;
     border-radius: 20px;
-    border: 1px solid #999;
-    background-color: transparent;
+    border: 1px solid #e2e8f0;
+    background-color: white;
     cursor: pointer;
     font-size: 14px;
-    color: #333;
+    color: #4a5568;
+    font-weight: 600;
     transition: all 0.2s;
 }
 
 .filter-chip:hover {
-    background-color: #dcdcdc;
+    background-color: #f7fafc;
+    border-color: #cbd5e0;
 }
 
 .filter-chip.active {
-    background-color: #5C6BC0;
-    /* Azul activo */
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
     color: white;
-    border-color: #5C6BC0;
+    border-color: transparent;
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.3);
 }
 
 /* --- 3. Caja de Estado (Cyan) --- */
@@ -200,16 +221,19 @@
 
 .btn-ver {
     align-self: flex-start;
-    /* Alineado a la izquierda */
-    background-color: #5C6BC0;
+    background: linear-gradient(135deg, #6c5ce7, #5570f1);
     color: white;
     border: none;
-    padding: 8px 20px;
-    border-radius: 6px;
+    padding: 10px 20px;
+    border-radius: 12px;
     font-size: 14px;
+    font-weight: 700;
     cursor: pointer;
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.3);
+    transition: all 0.2s;
 }
 
 .btn-ver:hover {
-    background-color: #4f5dad;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(85, 112, 241, 0.4);
 }

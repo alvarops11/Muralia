@@ -2,6 +2,7 @@ import { Component, OnInit, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { ApiService } from '../../api.service';
+import { NotificationService } from '../../services/notification.service';
 
 @Component({
   selector: 'app-dashboard',
@@ -80,12 +81,13 @@ import { ApiService } from '../../api.service';
 export class DashboardComponent implements OnInit {
   api = inject(ApiService);
   cd = inject(ChangeDetectorRef);
-  
+  private notify = inject(NotificationService);
+
   boards: any[] = [];
   cargando = true;
 
-  ngOnInit() { 
-    this.cargar(); 
+  ngOnInit() {
+    this.cargar();
   }
 
   cargar() {
@@ -104,14 +106,14 @@ export class DashboardComponent implements OnInit {
     });
   }
 
-  crearTablero() {
-    const titulo = prompt("Título del nuevo tablero:");
+  async crearTablero() {
+    const titulo = await this.notify.prompt("Título del nuevo tablero:");
     if (!titulo) return;
     this.api.createBoard({ titulo, privacidad: 'privado' }).subscribe(() => this.cargar());
   }
 
-  borrarTablero(id: string) {
-    if(confirm("¿Seguro que quieres eliminar este tablero?")) {
+  async borrarTablero(id: string) {
+    if (await this.notify.confirm("¿Seguro que quieres eliminar este tablero?")) {
       this.api.deleteBoard(id).subscribe(() => this.cargar());
     }
   }

@@ -527,6 +527,17 @@ body {
     opacity: 1;
 }
 
+.note-author {
+    margin-top: auto;
+    font-size: 11px;
+    font-weight: 600;
+    color: rgba(0, 0, 0, 0.4);
+    text-align: right;
+    padding-top: 10px;
+    margin-bottom: 12px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
 /* Botón comentar dentro de la nota */
 .btn-comment {
     margin-top: auto;
@@ -864,6 +875,7 @@ body {
     margin: 0;
     font-size: 20px;
     font-weight: 700;
+    color: white;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
@@ -1026,11 +1038,11 @@ body {
 
 /* Modal de Búsqueda */
 .modal-popup-search {
-    background: white;
-    border-radius: 12px;
+    background: transparent;
+    border-radius: 20px;
     width: 650px;
     max-width: 95%;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+    box-shadow: none;
     overflow: hidden;
     position: relative;
 }

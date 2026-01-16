@@ -181,9 +181,9 @@ export class Mural implements OnInit, OnDestroy {
         this.cd.detectChanges();
       },
       error: (err) => {
+        this.cargando = false;
         if (!silent) {
           this.error = "Error cargando";
-          this.cargando = false;
         }
         this.cd.detectChanges();
       }
@@ -317,11 +317,13 @@ export class Mural implements OnInit, OnDestroy {
         next: () => {
           this.guardandoPosit = false;
           this.cerrarModal();
+          this.cd.detectChanges();
           this.cargar(true); // Recarga silenciosa para no bloquear
         },
         error: () => {
           this.notify.error("❌ Error al crear la nota. Inténtalo de nuevo.");
           this.guardandoPosit = false;
+          this.cd.detectChanges();
         }
       });
     }

@@ -17,6 +17,7 @@ export class Compartir {
 
   @Output() onInvite = new EventEmitter<string>();
   @Output() onRemove = new EventEmitter<string>();
+  @Output() onClose = new EventEmitter<void>();
 
   newEmail: string = '';
 

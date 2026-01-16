@@ -110,10 +110,11 @@ export const addPosit = async (req: Request, res: Response) => {
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
 
-    // 🔥 SOCKET
-    emitirActualizacion(req, boardId, 'addPosit');
-
+    // Enviar respuesta HTTP primero para liberar al frontend
     res.status(201).json({ message: 'Posit añadido', posit: newPosit });
+
+    // 🔥 SOCKET después
+    emitirActualizacion(req, boardId, 'addPosit');
   } catch (error: any) {
     res.status(500).json({ error: error.errors || 'Error añadiendo posit' });
   }

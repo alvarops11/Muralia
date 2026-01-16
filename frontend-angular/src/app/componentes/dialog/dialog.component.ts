@@ -36,56 +36,112 @@ import { Subscription } from 'rxjs';
   styles: [`
     .modal-overlay {
       position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
+      inset: 0;
+      background: rgba(0, 0, 0, 0.5);
       backdrop-filter: blur(4px);
-      z-index: 10000;
       display: flex;
       align-items: center;
       justify-content: center;
-      animation: fadeIn 0.2s ease-out;
+      z-index: 10000;
+      animation: fadeIn 0.3s ease;
     }
     .modal-card {
       background: white;
-      width: 100%;
-      max-width: 400px;
-      border-radius: 12px;
-      box-shadow: 0 15px 35px rgba(0,0,0,0.3);
+      border-radius: 20px;
+      width: 90%;
+      max-width: 500px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
       overflow: hidden;
-      animation: scaleUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      animation: slideUp 0.3s ease;
     }
     .modal-header {
-      padding: 15px 20px;
-      background: #5c6bc0;
+      background: linear-gradient(135deg, #6c5ce7, #5570f1);
       color: white;
+      padding: 24px 30px;
       display: flex;
       align-items: center;
       gap: 10px;
     }
-    .modal-header h3 { margin: 0; font-size: 18px; }
-    .modal-body { padding: 20px; }
+    .modal-header h3 { 
+      margin: 0; 
+      font-size: 20px; 
+      font-weight: 700;
+      color: white;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+    .icon {
+      font-size: 24px;
+    }
+    .modal-body { 
+      padding: 30px 40px; 
+    }
+    .modal-body p {
+      color: #4a5568;
+      font-size: 15px;
+      margin-bottom: 16px;
+    }
     .modal-input {
       width: 100%;
-      padding: 10px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
-      margin-top: 10px;
+      padding: 14px 16px;
+      font-size: 15px;
+      color: #2d3748;
+      background-color: #f7fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      box-sizing: border-box;
+      font-family: 'Roboto', sans-serif;
+      transition: all 0.2s;
       outline: none;
     }
-    .modal-input:focus { border-color: #5c6bc0; box-shadow: 0 0 0 2px rgba(92,107,192,0.2); }
-    .modal-footer {
-      padding: 15px 20px;
-      background: #f9fafb;
-      display: flex;
-      justify-content: flex-end;
-      gap: 10px;
+    .modal-input:focus { 
+      background-color: white;
+      border-color: #5570f1; 
+      box-shadow: 0 0 0 3px rgba(85, 112, 241, 0.1);
     }
-    .btn { padding: 8px 16px; border-radius: 6px; border: none; cursor: pointer; font-weight: 500; }
-    .btn-primary { background: #5c6bc0; color: white; }
-    .btn-secondary { background: #e5e7eb; color: #374151; }
+    .modal-input::placeholder {
+      color: #a0aec0;
+    }
+    .modal-footer {
+      padding: 0 40px 40px;
+      display: flex;
+      gap: 15px;
+      justify-content: flex-end;
+    }
+    .btn { 
+      padding: 14px 24px; 
+      border-radius: 12px; 
+      border: none; 
+      cursor: pointer; 
+      font-weight: 700;
+      font-size: 15px;
+      transition: all 0.2s;
+    }
+    .btn-primary { 
+      background: linear-gradient(135deg, #6c5ce7, #5570f1); 
+      color: white;
+      box-shadow: 0 4px 12px rgba(85, 112, 241, 0.3);
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(85, 112, 241, 0.4);
+    }
+    .btn-secondary { 
+      background: #edf2f7; 
+      color: #4a5568;
+    }
+    .btn-secondary:hover {
+      background: #e2e8f0;
+      color: #2d3748;
+    }
 
-    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes scaleUp { from { transform: scale(0.9); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    @keyframes fadeIn { 
+      from { opacity: 0; } 
+      to { opacity: 1; } 
+    }
+    @keyframes slideUp { 
+      from { transform: translateY(20px); opacity: 0; } 
+      to { transform: translateY(0); opacity: 1; } 
+    }
   `]
 })
 export class DialogComponent implements OnInit, OnDestroy {

@@ -1,8 +1,11 @@
 <div class="modal-container">
 
     <div class="modal-header">
-        <span class="header-icon">📈</span>
-        <h3>Estadísticas</h3>
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="header-icon">📈</span>
+            <h3>Estadísticas</h3>
+        </div>
+        <span class="close-modal-x" (click)="onClose.emit()">×</span>
     </div>
 
     <div class="modal-body">

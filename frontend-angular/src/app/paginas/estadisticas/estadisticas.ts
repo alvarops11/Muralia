@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 
 @Component({
@@ -10,6 +10,7 @@ import { CommonModule } from '@angular/common';
 })
 export class Estadisticas {
   @Input() board: any;
+  @Output() onClose = new EventEmitter<void>();
 
   get totalPostits() {
     return this.board?.posits?.length || 0;

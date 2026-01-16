@@ -67,6 +67,11 @@ export class Mural implements OnInit, OnDestroy {
   nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
   coloresDisponibles = ['#fef3c7', '#a5f3fc', '#fbcfe8', '#bbf7d0', '#fed7aa'];
 
+  // Timers para el modo edición
+  editTimer: any = null;
+  countdownInterval: any = null;
+  tiempoRestante = 120; // 2 minutos en segundos
+
   // Locks: { positId: usuario }
   locks: { [key: string]: string } = {};
 
@@ -147,6 +152,13 @@ export class Mural implements OnInit, OnDestroy {
       this.subs.push(
         this.wsService.onUnlock().subscribe((data: any) => {
           delete this.locks[data.positId];
+
+          // Si me han desbloqueado el posit que estoy editando (ej: por tiempo agotado en server)
+          if (this.isEditing && this.editPositId === data.positId) {
+            this.notify.info("Se ha agotado el tiempo de edición.");
+            this.cerrarModal();
+          }
+
           this.cd.detectChanges();
         })
       );
@@ -164,6 +176,7 @@ export class Mural implements OnInit, OnDestroy {
     // Desuscribirse de todo para evitar memory leaks
     this.subs.forEach(s => s.unsubscribe());
     this.wsSubscription?.unsubscribe();
+    this.limpiarTimers();
   }
 
   cargar(silent = false) {
@@ -276,13 +289,44 @@ export class Mural implements OnInit, OnDestroy {
     // Emitir bloqueo
     if (this.id) {
       this.wsService.emitLock(this.id, posit.posit_id, this.auth.getUserName());
+      this.iniciarTimerEdicion();
     }
+  }
+
+  iniciarTimerEdicion() {
+    this.limpiarTimers();
+    this.tiempoRestante = 120; // 2 minutos
+
+    // Mostramos aviso si queda poco tiempo (opcional, pero mejora UX)
+    this.countdownInterval = setInterval(() => {
+      this.tiempoRestante--;
+      if (this.tiempoRestante <= 0) {
+        this.limpiarTimers();
+        this.cerrarModal();
+        this.notify.info("Tiempo de edición agotado.");
+      }
+      this.cd.detectChanges();
+    }, 1000);
+  }
+
+  limpiarTimers() {
+    if (this.countdownInterval) {
+      clearInterval(this.countdownInterval);
+      this.countdownInterval = null;
+    }
+  }
+
+  get tiempoFormateado(): string {
+    const mins = Math.floor(this.tiempoRestante / 60);
+    const segs = this.tiempoRestante % 60;
+    return `${mins}:${segs.toString().padStart(2, '0')}`;
   }
 
   cerrarModal() {
     if (this.isEditing && this.id && this.editPositId) {
       this.wsService.emitUnlock(this.id, this.editPositId);
     }
+    this.limpiarTimers();
     this.mostrarModal = false;
     this.isEditing = false;
     this.editPositId = null;
@@ -372,20 +416,20 @@ export class Mural implements OnInit, OnDestroy {
           return userId; // El primero debería ser el actual en algunos casos, pero mejor dejarlo así
         });
         const userId = currentUser?.usuario_id?._id || currentUser?.usuario_id || null;
-        
+
         const nuevoComentario = {
           _id: 'temp_' + Date.now(), // ID temporal
           usuario_id: userId || { email: this.auth.getUserName() },
           contenido: t,
           fecha: new Date()
         };
-        
+
         // Agregar el comentario localmente de inmediato
         if (!posit.comentarios) {
           posit.comentarios = [];
         }
         posit.comentarios.push(nuevoComentario);
-        
+
         // Actualizar también el posit en el panel si está abierto (actualización optimista)
         if (this.positComentarios && this.positComentarios.posit_id === pid) {
           if (!this.positComentarios.comentarios) {
@@ -393,9 +437,9 @@ export class Mural implements OnInit, OnDestroy {
           }
           this.positComentarios.comentarios.push(nuevoComentario);
         }
-        
+
         this.cd.detectChanges();
-        
+
         // Enviar al backend
         this.api.addComment(this.id, pid, t).subscribe({
           next: (response: any) => {
@@ -446,7 +490,7 @@ export class Mural implements OnInit, OnDestroy {
           posit.comentarios.splice(comentarioIndex, 1);
         }
       }
-      
+
       // Actualizar también el posit en el panel si está abierto (actualización optimista)
       if (this.positComentarios && this.positComentarios.posit_id === pid && this.positComentarios.comentarios) {
         const comentarioIndex = this.positComentarios.comentarios.findIndex((c: any) => c._id?.toString() === cid || c._id === cid);
@@ -454,9 +498,9 @@ export class Mural implements OnInit, OnDestroy {
           this.positComentarios.comentarios.splice(comentarioIndex, 1);
         }
       }
-      
+
       this.cd.detectChanges();
-      
+
       // Enviar al backend
       this.api.deleteComment(this.id, pid, cid).subscribe({
         next: () => {

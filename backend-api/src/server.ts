@@ -51,13 +51,38 @@ io.on('connection', (socket) => {
   });
 
   // --- BLOQUEO DE EDICIÓN ---
-  socket.on('bloquear_posit', (data) => {
+  // Mapa para guardar los timeouts de bloqueo: { "boardId:positId": timeoutId }
+  const lockTimeouts = new Map<string, NodeJS.Timeout>();
+
+  socket.on('bloquear_posit', (data: { boardId: string, positId: string, usuario: string }) => {
     // data = { boardId, positId, usuario }
+    const lockKey = `${data.boardId}:${data.positId}`;
+    
+    // Si ya existe un timeout (renovación o error), lo limpiamos
+    if (lockTimeouts.has(lockKey)) {
+      clearTimeout(lockTimeouts.get(lockKey));
+    }
+
+    // Emitimos a los demás
     socket.to(data.boardId).emit('posit_bloqueado', data);
+
+    // Programamos el desbloqueo automático en 2 minutos (120000 ms)
+    const timeout = setTimeout(() => {
+      console.log(`⏰ Límite de tiempo excedido para posit ${data.positId} en tablero ${data.boardId}`);
+      io.to(data.boardId).emit('posit_desbloqueado', { boardId: data.boardId, positId: data.positId });
+      lockTimeouts.delete(lockKey);
+    }, 120000);
+
+    lockTimeouts.set(lockKey, timeout);
   });
 
-  socket.on('desbloquear_posit', (data) => {
+  socket.on('desbloquear_posit', (data: { boardId: string, positId: string }) => {
     // data = { boardId, positId }
+    const lockKey = `${data.boardId}:${data.positId}`;
+    if (lockTimeouts.has(lockKey)) {
+      clearTimeout(lockTimeouts.get(lockKey));
+      lockTimeouts.delete(lockKey);
+    }
     socket.to(data.boardId).emit('posit_desbloqueado', data);
   });
 

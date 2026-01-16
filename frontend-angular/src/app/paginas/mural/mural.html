@@ -3,6 +3,9 @@
     <div class="modal-popup-mural" (click)="$event.stopPropagation()">
         <div class="modal-header-creation">
             <h2>{{ isEditing ? '✏️ Editar Post-it' : '✨ Nuevo Post-it' }}</h2>
+            <div *ngIf="isEditing" class="edit-timer-badge" [class.urgent]="tiempoRestante < 30">
+                ⏱️ {{ tiempoFormateado }}
+            </div>
         </div>
 
         <div class="modal-body-creation">

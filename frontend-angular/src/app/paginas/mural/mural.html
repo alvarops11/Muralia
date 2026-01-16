@@ -176,23 +176,57 @@
                 <div class="note-title">{{ posit.titulo }}</div>
                 <div class="note-subtitle">{{ posit.contenido }}</div>
 
-                <div class="task-list">
-                    <div *ngFor="let c of posit.comentarios" class="task-item">
-                        {{ c.contenido }}
-                        <span class="close" (click)="borrarComentario(posit.posit_id, c._id); $event.stopPropagation()"
-                            (mousedown)="$event.stopPropagation()">✖</span>
-                    </div>
-                </div>
-
                 <div class="note-author">
                     👤 {{ getMemberName(posit.autor_id) }}
                 </div>
 
-                <div class="btn-comment" (click)="comentar(posit.posit_id); $event.stopPropagation()">+
-                    Comentar</div>
+                <div class="btn-comment" (click)="abrirComentarios(posit); $event.stopPropagation()">
+                    💬 Comentarios 
+                    <span *ngIf="posit.comentarios?.length" class="comment-badge">{{ posit.comentarios.length }}</span>
+                </div>
             </div>
 
         </div>
     </main>
+
+    <!-- Overlay para cerrar panel de comentarios -->
+    <div *ngIf="mostrarComentarios" class="comments-panel-overlay" (click)="cerrarComentarios()"></div>
+
+    <!-- Panel lateral de comentarios -->
+    <aside class="comments-panel" [class.open]="mostrarComentarios">
+        <div class="comments-panel-header">
+            <div class="comments-header-info">
+                <h3>💬 Comentarios</h3>
+                <span *ngIf="positComentarios" class="posit-title-badge">{{ positComentarios.titulo || 'Sin título' }}</span>
+            </div>
+            <button class="close-comments-btn" (click)="cerrarComentarios()">×</button>
+        </div>
+
+        <div class="comments-panel-body" *ngIf="positComentarios">
+            <div class="comments-list">
+                <div *ngFor="let c of positComentarios.comentarios" class="comment-item">
+                    <div class="comment-content">
+                        <div class="comment-header">
+                            <span class="comment-author">👤 {{ getMemberName(c.usuario_id) }}</span>
+                            <button class="delete-comment-btn" (click)="borrarComentario(positComentarios.posit_id, c._id)"
+                                title="Borrar comentario">🗑️</button>
+                        </div>
+                        <p class="comment-text">{{ c.contenido }}</p>
+                        <span class="comment-date" *ngIf="c.fecha">{{ c.fecha | date:'short' }}</span>
+                    </div>
+                </div>
+
+                <div *ngIf="!positComentarios.comentarios || positComentarios.comentarios.length === 0" class="no-comments">
+                    <p>No hay comentarios aún. ¡Sé el primero en comentar!</p>
+                </div>
+            </div>
+
+            <div class="comments-panel-footer">
+                <button class="btn-add-comment" (click)="comentar(positComentarios.posit_id)">
+                    + Agregar comentario
+                </button>
+            </div>
+        </div>
+    </aside>
 
 </div>

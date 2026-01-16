@@ -59,6 +59,8 @@ export class Mural implements OnInit, OnDestroy {
   mostrarCompartir = false;
   mostrarExportar = false;
   mostrarEstadisticas = false;
+  mostrarComentarios = false;
+  positComentarios: any = null; // Posit seleccionado para ver comentarios
   guardandoPosit = false;
   isEditing = false;
   editPositId: string | null = null;
@@ -176,6 +178,14 @@ export class Mural implements OnInit, OnDestroy {
       next: (data) => {
         data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
         this.board = data;
+
+        // Actualizar el posit del panel de comentarios si está abierto
+        if (this.positComentarios && this.positComentarios.posit_id) {
+          const updatedPosit = data.posits.find((p: any) => p.posit_id === this.positComentarios.posit_id);
+          if (updatedPosit) {
+            this.positComentarios = updatedPosit;
+          }
+        }
 
         this.cargando = false;
         this.cd.detectChanges();
@@ -340,6 +350,16 @@ export class Mural implements OnInit, OnDestroy {
     }
   }
 
+  abrirComentarios(posit: any) {
+    this.positComentarios = posit;
+    this.mostrarComentarios = true;
+  }
+
+  cerrarComentarios() {
+    this.mostrarComentarios = false;
+    this.positComentarios = null;
+  }
+
   async comentar(pid: string) {
     const t = await this.notify.prompt("💬 ¿Qué quieres comentar?");
     if (t && this.id && this.board) {
@@ -365,6 +385,15 @@ export class Mural implements OnInit, OnDestroy {
           posit.comentarios = [];
         }
         posit.comentarios.push(nuevoComentario);
+        
+        // Actualizar también el posit en el panel si está abierto (actualización optimista)
+        if (this.positComentarios && this.positComentarios.posit_id === pid) {
+          if (!this.positComentarios.comentarios) {
+            this.positComentarios.comentarios = [];
+          }
+          this.positComentarios.comentarios.push(nuevoComentario);
+        }
+        
         this.cd.detectChanges();
         
         // Enviar al backend
@@ -376,6 +405,10 @@ export class Mural implements OnInit, OnDestroy {
               const updatedPosit = response.board.posits.find((p: any) => p.posit_id === pid);
               if (updatedPosit && posit) {
                 posit.comentarios = updatedPosit.comentarios || [];
+                // Actualizar también el posit en el panel si está abierto con datos reales
+                if (this.positComentarios && this.positComentarios.posit_id === pid) {
+                  this.positComentarios.comentarios = updatedPosit.comentarios || [];
+                }
                 this.cd.detectChanges();
               }
             }
@@ -386,9 +419,16 @@ export class Mural implements OnInit, OnDestroy {
               const index = posit.comentarios.findIndex((c: any) => c._id === nuevoComentario._id);
               if (index !== -1) {
                 posit.comentarios.splice(index, 1);
-                this.cd.detectChanges();
               }
             }
+            // Revertir también en el panel si está abierto
+            if (this.positComentarios && this.positComentarios.posit_id === pid && this.positComentarios.comentarios) {
+              const index = this.positComentarios.comentarios.findIndex((c: any) => c._id === nuevoComentario._id);
+              if (index !== -1) {
+                this.positComentarios.comentarios.splice(index, 1);
+              }
+            }
+            this.cd.detectChanges();
             this.notify.error("❌ Error al agregar el comentario");
           }
         });
@@ -398,7 +438,36 @@ export class Mural implements OnInit, OnDestroy {
 
   async borrarComentario(pid: string, cid: string) {
     if (this.id && await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar este comentario? Esta acción no se puede deshacer.")) {
-      this.api.deleteComment(this.id, pid, cid).subscribe(() => this.cargar());
+      // Actualización optimista: eliminar el comentario inmediatamente
+      const posit = this.board?.posits.find((p: any) => p.posit_id === pid);
+      if (posit && posit.comentarios) {
+        const comentarioIndex = posit.comentarios.findIndex((c: any) => c._id?.toString() === cid || c._id === cid);
+        if (comentarioIndex !== -1) {
+          posit.comentarios.splice(comentarioIndex, 1);
+        }
+      }
+      
+      // Actualizar también el posit en el panel si está abierto (actualización optimista)
+      if (this.positComentarios && this.positComentarios.posit_id === pid && this.positComentarios.comentarios) {
+        const comentarioIndex = this.positComentarios.comentarios.findIndex((c: any) => c._id?.toString() === cid || c._id === cid);
+        if (comentarioIndex !== -1) {
+          this.positComentarios.comentarios.splice(comentarioIndex, 1);
+        }
+      }
+      
+      this.cd.detectChanges();
+      
+      // Enviar al backend
+      this.api.deleteComment(this.id, pid, cid).subscribe({
+        next: () => {
+          this.cargar(true); // Recarga silenciosa para sincronizar
+        },
+        error: () => {
+          // Si falla, recargar para revertir cambios
+          this.cargar(true);
+          this.notify.error("❌ Error al borrar el comentario");
+        }
+      });
     }
   }
 

@@ -11,11 +11,32 @@
 
     <div class="modal-body">
 
-        <div class="form-group">
-            <label class="form-label">Enlace de compartición</label>
-            <div class="link-row">
-                <input type="text" class="form-input" [value]="shareLink" readonly>
-                <button class="btn-copy" (click)="copyLink()">
+        <div class="form-group role-selection-section">
+            <label class="form-label">Permisos del enlace compartido</label>
+            <div class="role-cards-container">
+                <div class="role-card" [class.active]="roleParaLink === 'lector'" (click)="roleParaLink = 'lector'">
+                    <div class="role-card-indicator" *ngIf="roleParaLink === 'lector'">✓</div>
+                    <div class="role-card-icon">👁️</div>
+                    <div class="role-card-info">
+                        <span class="role-card-title">Lector</span>
+                        <span class="role-card-desc">Solo ver y comentar</span>
+                    </div>
+                </div>
+
+                <div class="role-card" [class.active]="roleParaLink === 'editor'" (click)="roleParaLink = 'editor'">
+                    <div class="role-card-indicator" *ngIf="roleParaLink === 'editor'">✓</div>
+                    <div class="role-card-icon">✏️</div>
+                    <div class="role-card-info">
+                        <span class="role-card-title">Editor</span>
+                        <span class="role-card-desc">Crear y editar posits</span>
+                    </div>
+                </div>
+            </div>
+
+            <label class="form-label" style="margin-top: 15px;">Enlace de invitación</label>
+            <div class="link-row-premium">
+                <input type="text" class="form-input-share" [value]="shareLink" readonly>
+                <button class="btn-copy-premium" (click)="copyLink()">
                     <span class="copy-icon">📋</span>
                     Copiar
                 </button>
@@ -30,7 +51,14 @@
                     <span class="user-avatar">👤</span>
                     <div class="user-info">
                         <span class="user-email">{{ getMemberName(p.usuario_id) }}</span>
-                        <span class="user-role">{{ p.permiso }}</span>
+                        <!-- Dropdown de rol solo si soy Admin -->
+                        <select *ngIf="userRole === 'admin'" class="user-role-select" [ngModel]="p.permiso"
+                            (ngModelChange)="onRoleChange.emit({ userId: p.usuario_id?._id || p.usuario_id, role: $event })">
+                            <option value="lector">lector</option>
+                            <option value="editor">editor</option>
+                            <option value="admin">admin</option>
+                        </select>
+                        <span *ngIf="userRole !== 'admin'" class="user-role">{{ p.permiso }}</span>
                     </div>
                     <span class="remove-user-btn" (click)="remove(p.usuario_id?._id || p.usuario_id)">×</span>
                 </div>

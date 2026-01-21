@@ -75,7 +75,7 @@
 <div *ngIf="mostrarCompartir" class="modal-overlay-mural" (click)="cerrarCompartir()">
     <app-compartir [boardId]="board?._id" [participantes]="board?.participantes || []" [userRole]="currentUserRole"
         (onInvite)="invitar($event)" (onRemove)="echarlo($event)" (onClose)="cerrarCompartir()"
-        (click)="$event.stopPropagation()"
+        (onRoleChange)="actualizarRol($event)" (click)="$event.stopPropagation()"
         style="width: 100%; max-width: 600px; display: flex; justify-content: center;"></app-compartir>
 </div>
 

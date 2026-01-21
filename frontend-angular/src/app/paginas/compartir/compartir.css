@@ -159,6 +159,22 @@
     color: #666;
 }
 
+.user-role-select {
+    font-size: 12px;
+    color: #5570f1;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+    border-radius: 4px;
+    padding: 2px 4px;
+    outline: none;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.user-role-select:hover {
+    border-color: #5570f1;
+}
+
 .invite-row-container {
     display: flex;
     flex-direction: column;
@@ -232,4 +248,120 @@
 .remove-user-btn:hover {
     color: #ef4444;
     background-color: #fee2e2;
+}
+
+/* --- Rediseño Premium de Roles --- */
+.role-cards-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 10px;
+}
+
+.role-card {
+    position: relative;
+    background: #f8fafc;
+    border: 2px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    gap: 12px;
+}
+
+.role-card:hover {
+    border-color: #cbd5e1;
+    background: white;
+}
+
+.role-card.active {
+    background: white;
+    border-color: #5570f1;
+    box-shadow: 0 4px 15px rgba(85, 112, 241, 0.1);
+}
+
+.role-card-icon {
+    font-size: 24px;
+    background: white;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.role-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.role-card-title {
+    font-weight: 700;
+    font-size: 14px;
+    color: #1e293b;
+}
+
+.role-card-desc {
+    font-size: 11px;
+    color: #64748b;
+    line-height: 1.2;
+}
+
+.role-card-indicator {
+    display: none;
+    /* Quitamos el check de arriba para que sea más limpio */
+}
+
+/* Enlace premium */
+.link-row-premium {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 14px;
+    padding: 8px;
+    gap: 8px;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+}
+
+.form-input-share {
+    flex: 1;
+    background: transparent;
+    border: none;
+    padding: 10px;
+    font-size: 14px;
+    color: #475569;
+    outline: none;
+    font-family: monospace;
+}
+
+.btn-copy-premium {
+    background: #5570f1;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 10px rgba(85, 112, 241, 0.2);
+}
+
+.btn-copy-premium:hover {
+    background: #4359e0;
+    box-shadow: 0 6px 15px rgba(85, 112, 241, 0.3);
+}
+
+.btn-copy-premium:active {
+    transform: scale(0.96);
 }

@@ -2,7 +2,7 @@ import { Component, Input, OnInit, OnDestroy, inject, ChangeDetectorRef } from '
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../api.service';
-import { RouterLink, ActivatedRoute } from '@angular/router';
+import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, CdkDragMove, moveItemInArray } from '@angular/cdk/drag-drop';
 import { WebsocketService } from '../../../services/websocket.service';
 import { Subscription, Subject } from 'rxjs';
@@ -31,6 +31,7 @@ export class Mural implements OnInit, OnDestroy {
   wsService = inject(WebsocketService);
   private notify = inject(NotificationService);
   private auth = inject(AuthService);
+  private router = inject(Router);
 
   board: any = null;
   cargando = false;
@@ -143,6 +144,33 @@ export class Mural implements OnInit, OnDestroy {
         })
       );
 
+      // --- Gestión de Invitaciones vía Link ---
+      this.subs.push(
+        this.route.queryParamMap.subscribe(params => {
+          const invite = params.get('invite');
+          const role = params.get('role');
+
+          if (invite === 'true' && role && this.id) {
+            this.api.joinBoard(this.id, role).subscribe({
+              next: () => {
+                this.notify.success(`¡Bienvenido! Te has unido como ${role}`);
+                // Limpiar la URL para no volver a unirse al recargar
+                this.router.navigate([], {
+                  queryParams: { invite: null, role: null },
+                  queryParamsHandling: 'merge',
+                  replaceUrl: true
+                });
+                this.cargar(true);
+              },
+              error: (err) => {
+                console.error('Error al unirse via link:', err);
+                this.cargar(true);
+              }
+            });
+          }
+        })
+      );
+
       // 7. Bloqueos de edición
       this.subs.push(
         this.wsService.onLock().subscribe((data: any) => {
@@ -162,6 +190,15 @@ export class Mural implements OnInit, OnDestroy {
           }
 
           this.cd.detectChanges();
+        })
+      );
+
+      // Socket: Usuario nuevo unido via link
+      this.subs.push(
+        this.wsService.onUpdate().subscribe((data: any) => {
+          if (data.accion === 'userJoined') {
+            this.cargar(true);
+          }
         })
       );
 
@@ -193,6 +230,7 @@ export class Mural implements OnInit, OnDestroy {
       next: (data) => {
         data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
         this.board = data;
+        this.error = ''; // Limpiar cualquier error previo (importante al unirse via link)
 
         // Determinar rol del usuario actual
         const uid = this.auth.getUserId();
@@ -298,6 +336,18 @@ export class Mural implements OnInit, OnDestroy {
   async echarlo(uid: string) {
     if (await this.notify.confirm("🛑 ¿Echar al colaborador?")) {
       this.api.removeParticipant(this.id!, uid).subscribe(() => this.cargar());
+    }
+  }
+
+  actualizarRol(event: { userId: string, role: string }) {
+    if (this.id) {
+      this.api.updateParticipantRole(this.id, event.userId, event.role).subscribe({
+        next: () => {
+          this.notify.success("Rol actualizado");
+          this.cargar(true);
+        },
+        error: () => this.notify.error("Error al actualizar el rol")
+      });
     }
   }
 

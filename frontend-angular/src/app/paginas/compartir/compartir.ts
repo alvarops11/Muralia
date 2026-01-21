@@ -16,10 +16,12 @@ export class Compartir {
   @Input() participantes: any[] = [];
   @Input() userRole: string = 'lector';
   selectedPermiso: 'admin' | 'editor' | 'lector' = 'lector';
+  roleParaLink: 'lector' | 'editor' = 'lector';
 
   @Output() onInvite = new EventEmitter<{ email: string, permiso: string }>();
   @Output() onRemove = new EventEmitter<string>();
   @Output() onClose = new EventEmitter<void>();
+  @Output() onRoleChange = new EventEmitter<{ userId: string, role: string }>();
 
   newEmail: string = '';
 
@@ -35,7 +37,7 @@ export class Compartir {
   }
 
   get shareLink() {
-    return `${window.location.origin}/board/${this.boardId}`;
+    return `${window.location.origin}/board/${this.boardId}?invite=true&role=${this.roleParaLink}`;
   }
 
   copyLink() {

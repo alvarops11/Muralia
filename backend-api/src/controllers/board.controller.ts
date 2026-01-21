@@ -654,3 +654,87 @@ export const deleteFileFromPosit = async (req: Request, res: Response) => {
     res.status(500).json({ error: 'Error eliminando el archivo' });
   }
 };
+
+// 13. Unirse a un Tablero vía Enlace (NUEVO)
+export const joinBoardViaLink = async (req: Request, res: Response) => {
+  const { boardId } = req.params;
+  const { role } = req.body; // 'editor' o 'lector'
+  const user = req.currentUser!;
+
+  try {
+    // 1. Verificar si el tablero existe
+    const board = await Board.findById(boardId);
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+
+    // 2. Verificar si ya es participante
+    const isParticipant = board.participantes.some(p => {
+      const puid = (p.usuario_id as any)?._id || p.usuario_id;
+      return puid.toString() === user._id.toString();
+    });
+
+    if (isParticipant) {
+      return res.json({ message: 'Ya eres participante de este tablero', board });
+    }
+
+    // 3. Añadir como participante con el rol solicitado
+    const updatedBoard = await Board.findByIdAndUpdate(
+      boardId,
+      {
+        $addToSet: {
+          participantes: {
+            usuario_id: user._id,
+            permiso: role === 'editor' ? 'editor' : 'lector',
+            fecha_incorporacion: new Date()
+          }
+        }
+      },
+      { new: true }
+    );
+
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'userJoined');
+
+    res.json({ message: 'Te has unido al tablero', board: updatedBoard });
+
+  } catch (error) {
+    console.error('Error al unirse al tablero:', error);
+    res.status(500).json({ error: 'Error interno al unirse al tablero' });
+  }
+};
+
+// 14. Actualizar Rol de un Participante (NUEVO)
+export const updateParticipantRole = async (req: Request, res: Response) => {
+  const { boardId, userId } = req.params;
+  const { role } = req.body; // 'admin' | 'editor' | 'lector'
+  const user = req.currentUser!;
+
+  try {
+    // 1. Verificar si el cargando es admin del tablero
+    const board = await Board.findOne({
+      _id: boardId,
+      participantes: {
+        $elemMatch: { usuario_id: user._id, permiso: 'admin' }
+      }
+    });
+
+    if (!board) return res.status(403).json({ error: 'No tienes permisos de administrador' });
+
+    // 2. Actualizar el rol del participante específico
+    const updatedBoard = await Board.findOneAndUpdate(
+      { _id: boardId, "participantes.usuario_id": userId },
+      { $set: { "participantes.$.permiso": role } },
+      { new: true }
+    );
+
+    if (!updatedBoard) return res.status(404).json({ error: 'Participante no encontrado' });
+
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'roleUpdated');
+
+    res.json({ message: 'Rol actualizado correctamente', board: updatedBoard });
+
+  } catch (error) {
+    console.error('Error actualizando rol:', error);
+    res.status(500).json({ error: 'Error interno al actualizar rol' });
+  }
+};

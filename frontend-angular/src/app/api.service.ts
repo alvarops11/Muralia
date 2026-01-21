@@ -11,6 +11,9 @@ export class ApiService {
   // --- TABLEROS ---
   getBoards() { return this.http.get<any[]>(this.apiUrl); }
   getBoard(id: string) { return this.http.get<any>(`${this.apiUrl}/${id}`); }
+  joinBoard(id: string, role: string) {
+    return this.http.post(`${this.apiUrl}/${id}/join`, { role });
+  }
   createBoard(data: any) { return this.http.post(this.apiUrl, data); }
   deleteBoard(id: string) { return this.http.delete(`${this.apiUrl}/${id}`); }
 
@@ -41,5 +44,8 @@ export class ApiService {
   }
   removeParticipant(boardId: string, userId: string) {
     return this.http.delete(`${this.apiUrl}/${boardId}/participants/${userId}`);
+  }
+  updateParticipantRole(boardId: string, userId: string, role: string) {
+    return this.http.put(`${this.apiUrl}/${boardId}/participants/${userId}`, { role });
   }
 }

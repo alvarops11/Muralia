@@ -1549,3 +1549,86 @@ body {
     margin-top: 8px;
     font-style: italic;
 }
+/* CSS Appended */
+
+/* --- Modal de Invitados --- */
+.guest-onboarding-overlay {
+    z-index: 10000 !important;
+    backdrop-filter: blur(10px) !important;
+    background: rgba(15, 23, 42, 0.7) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+.modal-popup-guest {
+    background: white !important;
+    width: 90% !important;
+    max-width: 400px !important;
+    border-radius: 24px !important;
+    padding: 40px !important;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25) !important;
+    text-align: center !important;
+    position: relative !important;
+    z-index: 10001 !important;
+}
+
+.guest-header {
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-bottom: 24px !important;
+}
+
+.guest-body h3 {
+    font-size: 24px !important;
+    font-weight: 800 !important;
+    color: #1e293b !important;
+    margin-bottom: 8px !important;
+    margin-top: 0 !important;
+}
+
+.guest-body p {
+    color: #64748b !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 30px !important;
+}
+
+.guest-form {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+}
+
+.guest-input {
+    padding: 14px 18px !important;
+    border: 2px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    transition: all 0.2s !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    text-align: center !important;
+}
+
+.btn-guest-join {
+    background: #5570f1 !important;
+    color: white !important;
+    border: none !important;
+    padding: 14px !important;
+    border-radius: 12px !important;
+    font-size: 16px !important;
+    font-weight: 700 !important;
+    cursor: pointer !important;
+    transition: all 0.2s !important;
+    width: 100% !important;
+}
+
+.guest-footer-info {
+    font-size: 11px !important;
+    margin-top: 24px !important;
+    opacity: 0.7 !important;
+    margin-bottom: 0 !important;
+}

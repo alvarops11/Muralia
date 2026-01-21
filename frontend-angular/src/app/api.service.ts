@@ -11,31 +11,35 @@ export class ApiService {
   // --- TABLEROS ---
   getBoards() { return this.http.get<any[]>(this.apiUrl); }
   getBoard(id: string) { return this.http.get<any>(`${this.apiUrl}/${id}`); }
-  joinBoard(id: string, role: string) {
-    return this.http.post(`${this.apiUrl}/${id}/join`, { role });
+  joinBoard(id: string, role: string, guestData?: { nombre: string, guestId: string }) {
+    return this.http.post(`${this.apiUrl}/${id}/join`, { role, ...guestData });
   }
   createBoard(data: any) { return this.http.post(this.apiUrl, data); }
   deleteBoard(id: string) { return this.http.delete(`${this.apiUrl}/${id}`); }
 
   // --- POSITS ---
   createPosit(boardId: string, data: any) { return this.http.post(`${this.apiUrl}/${boardId}/posits`, data); }
-  updatePosit(boardId: string, positId: string, data: any) { return this.http.put(`${this.apiUrl}/${boardId}/posits/${positId}`, data); }
-  deletePosit(boardId: string, positId: string) { return this.http.delete(`${this.apiUrl}/${boardId}/posits/${positId}`); }
+  updatePosit(boardId: string, positId: string, data: any) {
+    return this.http.put(`${this.apiUrl}/${boardId}/posits/${positId}`, data);
+  }
+  deletePosit(boardId: string, positId: string, data: any = {}) {
+    return this.http.request('delete', `${this.apiUrl}/${boardId}/posits/${positId}`, { body: data });
+  }
   uploadFile(boardId: string, positId: string, file: File) {
     const formData = new FormData();
     formData.append('archivo', file);
     return this.http.post(`${this.apiUrl}/${boardId}/posits/${positId}/upload`, formData);
   }
-  deleteFile(boardId: string, positId: string) {
-    return this.http.delete(`${this.apiUrl}/${boardId}/posits/${positId}/file`);
+  deleteFile(boardId: string, positId: string, data: any = {}) {
+    return this.http.request('delete', `${this.apiUrl}/${boardId}/posits/${positId}/file`, { body: data });
   }
 
   // --- COMENTARIOS ---
-  addComment(boardId: string, positId: string, contenido: string) {
-    return this.http.post(`${this.apiUrl}/${boardId}/posits/${positId}/comments`, { contenido });
+  addComment(boardId: string, positId: string, data: any) {
+    return this.http.post(`${this.apiUrl}/${boardId}/posits/${positId}/comments`, data);
   }
-  deleteComment(boardId: string, positId: string, commentId: string) {
-    return this.http.delete(`${this.apiUrl}/${boardId}/posits/${positId}/comments/${commentId}`);
+  deleteComment(boardId: string, positId: string, commentId: string, data: any = {}) {
+    return this.http.request('delete', `${this.apiUrl}/${boardId}/posits/${positId}/comments/${commentId}`, { body: data });
   }
 
   // --- PARTICIPANTES ---

@@ -9,19 +9,17 @@ import {
   joinBoardViaLink, // <--- NUEVO
   updateParticipantRole // <--- NUEVO
 } from '../controllers/board.controller';
-import { validateToken } from '../middlewares/auth.middleware';
+import { validateToken, optionalAuth } from '../middlewares/auth.middleware';
 import { upload } from '../middlewares/upload.middleware';
 
 const router = Router();
-router.use(validateToken);
-
 // --- TABLEROS ---
-router.get('/', getMyBoards);
-router.post('/', createBoard);
-router.get('/:boardId', getBoardById);
-router.put('/:boardId', updateBoard);
-router.delete('/:boardId', deleteBoard);
-router.post('/:boardId/join', joinBoardViaLink); // <--- NUEVO
+router.get('/', validateToken, getMyBoards);
+router.post('/', validateToken, createBoard);
+router.get('/:boardId', optionalAuth, getBoardById);
+router.put('/:boardId', validateToken, updateBoard);
+router.delete('/:boardId', validateToken, deleteBoard);
+router.post('/:boardId/join', optionalAuth, joinBoardViaLink);
 
 // --- POSITS ---
 router.post('/:boardId/posits', addPosit);

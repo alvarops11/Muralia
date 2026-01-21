@@ -6,6 +6,7 @@ import mongoose, { Schema } from 'mongoose';
 interface IComentario {
   _id?: string;
   usuario_id: string;
+  nombre?: string; // Para invitados
   contenido: string;
   fecha: Date;
 }
@@ -20,13 +21,16 @@ interface IPosit {
   imagen?: string;
   archivoUrl?: string;
   archivoNombre?: string;
-  autor_id: string;
+  autor_id?: string;    // Opcional para invitados
+  nombre_autor?: string; // Nombre legible (email o pseudónimo)
   fecha_creacion: Date;
   comentarios: IComentario[];
 }
 
 interface IParticipante {
-  usuario_id: string;
+  usuario_id: string; // Para usuarios registrados (ref)
+  guest_id?: string;  // Para invitados anónimos
+  nombre?: string;    // Nombre para mostrar
   permiso: 'admin' | 'lector' | 'editor';
   fecha_incorporacion: Date;
 }
@@ -36,7 +40,7 @@ export interface IBoard {
   _id: string;
   titulo: string;
   descripcion: string;
-  privacidad: 'publico' | 'privado';
+  privacidad: 'publico' | 'privado' | 'enlace-abierto';
   colorFondo: string;
   formato: 'kanban' | 'lista';
   enlace_compartido?: string;
@@ -50,7 +54,8 @@ export interface IBoard {
 // --- Schemas ---
 
 const ComentarioSchema = new Schema({
-  usuario_id: { type: String, ref: 'User', required: true },
+  usuario_id: { type: String, ref: 'User' }, // Opcional para invitados
+  nombre: { type: String },                 // Nombre de invitado si aplica
   contenido: { type: String, required: true },
   fecha: { type: Date, default: Date.now }
 });
@@ -69,13 +74,16 @@ const PositSchema = new Schema({
   imagen: { type: String },
   archivoUrl: { type: String },
   archivoNombre: { type: String },
-  autor_id: { type: String, ref: 'User', required: true },
+  autor_id: { type: String, ref: 'User' }, // Opcional
+  nombre_autor: { type: String },         // Para mostrar quién lo hizo sin populate
   fecha_creacion: { type: Date, default: Date.now },
   comentarios: [ComentarioSchema]
 }, { _id: false });
 
 const ParticipanteSchema = new Schema({
-  usuario_id: { type: String, ref: 'User', required: true },
+  usuario_id: { type: String, ref: 'User' }, // Opcional para invitados
+  guest_id: { type: String },               // Requerido para invitados
+  nombre: { type: String },
   permiso: {
     type: String,
     enum: ['admin', 'lector', 'editor'],
@@ -92,7 +100,7 @@ const BoardSchema = new Schema<IBoard>({
   descripcion: { type: String },
   privacidad: {
     type: String,
-    enum: ['publico', 'privado'],
+    enum: ['publico', 'privado', 'enlace-abierto'],
     default: 'privado'
   },
   colorFondo: { type: String, default: '#FFFFFF' },
@@ -102,7 +110,6 @@ const BoardSchema = new Schema<IBoard>({
   posits: [PositSchema]
 }, {
   timestamps: { createdAt: 'fecha_creacion', updatedAt: 'fecha_modificacion' },
-  _id: false, // Desactiva la generación automática de _id
   collection: 'tableros'
 });
 

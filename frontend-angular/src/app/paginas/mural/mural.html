@@ -1,3 +1,25 @@
+<!-- Modal de Identificación para Invitados (NUEVO) -->
+<div *ngIf="mostrarLoginInvitado" class="modal-overlay-mural guest-onboarding-overlay">
+    <div class="modal-popup-guest" (click)="$event.stopPropagation()">
+        <div class="guest-header">
+            <span class="muralia-logo-text">Muralia</span>
+            <div class="muralia-logo-dot"></div>
+        </div>
+        <div class="guest-body">
+            <h3>¡Bienvenido al Mural!</h3>
+            <p>Este mural es abierto. Dinos tu nombre para empezar a colaborar.</p>
+            <div class="guest-form">
+                <input type="text" [(ngModel)]="nombreInvitado" placeholder="Tu nombre o apodo..."
+                    (keyup.enter)="confirmarNombreInvitado()" class="guest-input">
+                <button class="btn-guest-join" (click)="confirmarNombreInvitado()" [disabled]="!nombreInvitado.trim()">
+                    Entrar a editar
+                </button>
+            </div>
+            <p class="guest-footer-info">No necesitas cuenta para participar en este mural.</p>
+        </div>
+    </div>
+</div>
+
 <!-- Modal de Creación (Migrado) -->
 <div *ngIf="mostrarModal" class="modal-overlay-mural" (click)="cerrarModal()">
     <div class="modal-popup-mural" (click)="$event.stopPropagation()">
@@ -139,9 +161,9 @@
             <h4>EQUIPO ({{ board.participantes.length }})</h4>
 
             <div *ngFor="let p of board.participantes" class="team-member">
-                <div class="avatar">{{ getMemberName(p.usuario_id) | slice:0:1 | uppercase }}</div>
+                <div class="avatar">{{ getMemberName(p) | slice:0:1 | uppercase }}</div>
                 <div class="member-info">
-                    <div class="member-name">{{ getMemberName(p.usuario_id) }}</div>
+                    <div class="member-name">{{ getMemberName(p) }}</div>
                     <div class="member-role">{{ p.permiso }}</div>
                 </div>
                 <span *ngIf="isAdmin()" class="remove-icon"
@@ -207,7 +229,7 @@
                 <div class="note-subtitle">{{ posit.contenido }}</div>
 
                 <div class="note-author">
-                    👤 {{ getMemberName(posit.autor_id) }}
+                    👤 {{ getMemberName(posit) }}
                 </div>
 
                 <!-- Vista Previa de Imagen -->
@@ -257,7 +279,7 @@
                 <div *ngFor="let c of positComentarios.comentarios" class="comment-item">
                     <div class="comment-content">
                         <div class="comment-header">
-                            <span class="comment-author">👤 {{ getMemberName(c.usuario_id) }}</span>
+                            <span class="comment-author">👤 {{ getMemberName(c) }}</span>
                             <button class="delete-comment-btn"
                                 (click)="borrarComentario(positComentarios.posit_id, c._id)"
                                 title="Borrar comentario">🗑️</button>

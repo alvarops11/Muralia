@@ -53,9 +53,11 @@ const eliminarArchivoFisico = (archivoUrl?: string) => {
 // -------------------------------------------
 
 export const createBoard = async (req: Request, res: Response) => {
+  console.log('[createBoard] Body recibido:', JSON.stringify(req.body, null, 2));
   try {
     // 1. Validar datos de entrada con Zod
     const validatedData = createBoardSchema.parse(req.body);
+    console.log('[createBoard] Datos validados:', JSON.stringify(validatedData, null, 2));
 
     // 2. Obtener usuario autenticado (garantizado por el middleware)
     const user = req.currentUser!;
@@ -75,16 +77,35 @@ export const createBoard = async (req: Request, res: Response) => {
       }]
     });
 
+    console.log('[createBoard] Intentando guardar en DB...');
     // 5. Guardar en MongoDB
     await newBoard.save();
+    console.log('[createBoard] Tablero guardado con éxito');
 
     res.status(201).json({ message: 'Tablero creado', board: newBoard });
   } catch (error: any) {
+    console.error('[createBoard] ERROR DETECTADO:', error);
+
     // Si falla Zod, es un error de validación (400)
     if (error.name === 'ZodError') {
-      return res.status(400).json({ error: error.errors });
+      const messages = error.errors.map((e: any) => `${e.path.join('.')}: ${e.message}`);
+      console.error('[createBoard] Errores de Zod:', messages);
+      return res.status(400).json({ error: 'Error de validación', messages });
     }
-    res.status(500).json({ error: error.message || 'Error interno' });
+
+    // Si es error de duplicado (ej: boardId ya existe)
+    if (error.code === 11000) {
+      console.error('[createBoard] Error de duplicidad');
+      return res.status(409).json({ error: 'Ya existe un tablero con ese ID' });
+    }
+
+    // Error genérico
+    console.error('[createBoard] Error final:', error);
+    res.status(500).json({
+      error: 'Error interno del servidor',
+      message: error.message,
+      fullError: error // Enviamos el objeto completo para debuguear en consola del navegador
+    });
   }
 };
 
@@ -106,33 +127,52 @@ export const getMyBoards = async (req: Request, res: Response) => {
 // 1. Añadir Posit (Simplificado)
 export const addPosit = async (req: Request, res: Response) => {
   const { boardId } = req.params;
-  const user = req.currentUser!;
+  const user = req.currentUser; // Opcional
 
   try {
-    // Validamos input simplificado
     const data = createPositSchema.parse(req.body);
-
     const newPositId = generateId('posit');
+
+    // Identificar autor
+    let autor_id: string | undefined = undefined;
+    let nombre_autor: string = 'Anónimo';
+
+    if (user) {
+      autor_id = user._id;
+      nombre_autor = user.email;
+    } else {
+      const { nombre, guestId } = req.body;
+      if (!nombre) return res.status(400).json({ error: 'Falta nombre del autor' });
+      autor_id = undefined; // No tiene usuario_id de ref
+      nombre_autor = nombre;
+    }
 
     const newPosit = {
       posit_id: newPositId,
       titulo: data.titulo,
       contenido: data.contenido || '',
       color: data.color || 'yellow',
-      // Forzamos X e Y a 0, usamos el orden que nos manden o 0
       posicion: { x: 0, y: 0, orden: data.orden || 0 },
-      autor_id: user._id,
+      autor_id,
+      nombre_autor,
       fecha_creacion: new Date(),
       comentarios: []
     };
 
+    // Seguridad: Verificar permisos (admin, editor o invitado registrado en el board)
+    const boardQuery: any = { _id: boardId };
+    if (user) {
+      boardQuery.participantes = {
+        $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+      };
+    } else {
+      boardQuery.participantes = {
+        $elemMatch: { guest_id: req.body.guestId, permiso: { $in: ['admin', 'editor'] } }
+      };
+    }
+
     const board = await Board.findOneAndUpdate(
-      {
-        _id: boardId,
-        participantes: {
-          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
-        }
-      },
+      boardQuery,
       { $push: { posits: newPosit } },
       { new: true }
     );
@@ -152,18 +192,25 @@ export const addPosit = async (req: Request, res: Response) => {
 // 2. Editar/Mover un Posit (CON REORDENAMIENTO INTELIGENTE)
 export const updatePosit = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
-  const user = req.currentUser!;
+  const user = req.currentUser;
 
   try {
     const dataToUpdate = updatePositSchema.parse(req.body);
 
-    // 1. Buscamos el tablero completo
-    const board = await Board.findOne({
-      _id: boardId,
-      participantes: {
+    // 1. Buscamos el tablero completo con permisos
+    const boardQuery: any = { _id: boardId };
+
+    if (user) {
+      boardQuery.participantes = {
         $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
-      }
-    });
+      };
+    } else {
+      boardQuery.participantes = {
+        $elemMatch: { guest_id: req.body.guestId, permiso: { $in: ['admin', 'editor'] } }
+      };
+    }
+
+    const board = await Board.findOne(boardQuery);
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
 
@@ -233,15 +280,22 @@ export const getBoardById = async (req: Request, res: Response) => {
   const user = req.currentUser!;
 
   try {
-    const board = await Board.findOne({
-      _id: boardId,
-      'participantes.usuario_id': user._id // Seguridad: Solo si eres participante
-    })
+    const board = await Board.findById(boardId)
       .populate('participantes.usuario_id', 'email')
       .populate('posits.autor_id', 'email')
       .populate('posits.comentarios.usuario_id', 'email');
 
-    if (!board) return res.status(404).json({ error: 'Tablero no encontrado o acceso denegado' });
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+
+    // Seguridad: Si es privado, solo participantes. Si es enlace-abierto o publico, cualquiera.
+    const isParticipant = board.participantes.some(p => {
+      const puid = (p.usuario_id as any)?._id || p.usuario_id;
+      return user && puid.toString() === user._id.toString();
+    });
+
+    if (board.privacidad === 'privado' && !isParticipant) {
+      return res.status(403).json({ error: 'Acceso denegado' });
+    }
 
     res.json(board);
   } catch (error) {
@@ -252,7 +306,7 @@ export const getBoardById = async (req: Request, res: Response) => {
 // 4. Borrar un Posit
 export const deletePosit = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
-  const user = req.currentUser!;
+  const user = req.currentUser;
 
   try {
     // 1. Buscamos el board para ver si el posit tiene archivo
@@ -264,17 +318,21 @@ export const deletePosit = async (req: Request, res: Response) => {
       eliminarArchivoFisico(posit.archivoUrl);
     }
 
-    // 2. Quitamos el posit del array
+    // 2. Quitamos el posit del array con permisos
+    const boardQuery: any = { _id: boardId };
+    if (user) {
+      boardQuery.participantes = {
+        $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+      };
+    } else {
+      boardQuery.participantes = {
+        $elemMatch: { guest_id: req.body.guestId, permiso: { $in: ['admin', 'editor'] } }
+      };
+    }
+
     const result = await Board.findOneAndUpdate(
-      {
-        _id: boardId,
-        participantes: {
-          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
-        }
-      },
-      {
-        $pull: { posits: { posit_id: positId } }
-      },
+      boardQuery,
+      { $pull: { posits: { posit_id: positId } } },
       { new: true }
     );
 
@@ -347,17 +405,34 @@ export const inviteUser = async (req: Request, res: Response) => {
 // 6. Añadir Comentario
 export const addComment = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
-  const user = req.currentUser!;
+  const user = req.currentUser;
 
   try {
     const { contenido } = addCommentSchema.parse(req.body);
 
+    const boardQuery: any = { _id: boardId, 'posits.posit_id': positId };
+
+    let commentAuthorId: string;
+    let commentAuthorName: string | undefined = undefined;
+
+    if (user) {
+      boardQuery['participantes.usuario_id'] = user._id;
+      commentAuthorId = user._id;
+    } else {
+      const { guestId, nombre } = req.body;
+      if (!guestId) return res.status(400).json({ error: 'Falta guestId' });
+      boardQuery['participantes.guest_id'] = guestId;
+      commentAuthorId = guestId;
+      commentAuthorName = nombre;
+    }
+
     const board = await Board.findOneAndUpdate(
-      { _id: boardId, 'posits.posit_id': positId, 'participantes.usuario_id': user._id },
+      boardQuery,
       {
         $push: {
           'posits.$.comentarios': {
-            usuario_id: user._id,
+            usuario_id: commentAuthorId,
+            nombre: commentAuthorName, // Añadido para mostrar nombre de invitado
             contenido,
             fecha: new Date()
           }
@@ -484,76 +559,46 @@ export const removeParticipant = async (req: Request, res: Response) => {
 // 10. Eliminar Comentario
 export const deleteComment = async (req: Request, res: Response) => {
   const { boardId, positId, commentId } = req.params;
-  const user = req.currentUser!;
+  const user = req.currentUser;
 
   try {
-    console.log(`--- Intentando borrar comentario: board=${boardId}, posit=${positId}, comment=${commentId} ---`);
+    const board = await Board.findById(boardId);
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
 
-    // A) Verificar si el usuario es ADMIN del tablero
-    const boardAdmin = await Board.findOne({
-      _id: boardId,
-      participantes: { $elemMatch: { usuario_id: user._id, permiso: 'admin' } }
-    });
+    // 1. ¿Quién intenta borrar?
+    let actorId: string;
+    let isAdmin = false;
 
-    let query: any;
-
-    // Si es ADMIN, puede borrar cualquier comentario de ese board/posit
-    if (boardAdmin) {
-      query = { _id: boardId, 'posits.posit_id': positId };
-    }
-    // Si NO es Admin, solo puede borrar SU comentario
-    else {
-      query = {
-        _id: boardId,
-        'posits.posit_id': positId,
-        'participantes.usuario_id': user._id
-      };
+    if (user) {
+      actorId = user._id;
+      isAdmin = board.participantes.some(p => p.usuario_id && p.usuario_id.toString() === user._id.toString() && p.permiso === 'admin');
+    } else {
+      const { guestId } = req.body;
+      if (!guestId) return res.status(400).json({ error: 'Falta guestId' });
+      actorId = guestId;
+      isAdmin = false; // Los invitados por ahora no son admins
     }
 
-    // Convertimos commentId a ObjectId para asegurar el match en el $pull
-    // Los comentarios en Mongoose tienen _id autogenerado como ObjectId por defecto
-    const cid = new Types.ObjectId(commentId);
+    // 2. Ejecutar el pull con permiso: si es admin O si el comentario es suyo
+    const pullCondition: any = isAdmin
+      ? { _id: commentId }
+      : { _id: commentId, usuario_id: actorId };
 
-    // Ejecutamos el pull
-    const pullCondition: any = boardAdmin
-      ? { _id: cid }
-      : { _id: cid, usuario_id: user._id };
-
-    console.log('Query de búsqueda:', JSON.stringify(query));
-    console.log('Condición de Pull:', JSON.stringify(pullCondition));
-
-    const board = await Board.findOneAndUpdate(
-      query,
-      {
-        $pull: {
-          'posits.$.comentarios': pullCondition
-        }
-      },
+    const updatedBoard = await Board.findOneAndUpdate(
+      { _id: boardId, 'posits.posit_id': positId },
+      { $pull: { 'posits.$.comentarios': pullCondition } },
       { new: true }
     );
 
-    if (!board) {
-      console.log('No se encontró el tablero o posit con los permisos adecuados');
-      return res.status(404).json({ error: 'No se pudo borrar (No tienes permisos o no existe)' });
+    if (!updatedBoard) {
+      return res.status(403).json({ error: 'No tienes permisos o no existe el comentario' });
     }
-
-    // Buscamos si el comentario sigue ahí (si el pull no hizo nada)
-    const posit = board.posits.find(p => p.posit_id === positId);
-    const commentStillExists = posit?.comentarios.some(c => c._id?.toString() === commentId);
-
-    if (commentStillExists) {
-      console.log('El comentario no se borró (probablemente no eras el autor)');
-      return res.status(403).json({ error: 'No tienes permisos para borrar este comentario' });
-    }
-
-    console.log('Comentario borrado con éxito');
 
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'deleteComment');
-
     res.json({ message: 'Comentario eliminado' });
+
   } catch (error: any) {
-    console.error('Error eliminando comentario:', error);
     res.status(500).json({ error: 'Error eliminando comentario', details: error.message });
   }
 };
@@ -561,7 +606,7 @@ export const deleteComment = async (req: Request, res: Response) => {
 // 11. Subir Archivo a un Posit (NUEVO)
 export const uploadFileToPosit = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
-  const user = req.currentUser!;
+  const user = req.currentUser;
 
   try {
     if (!req.file) {
@@ -572,14 +617,19 @@ export const uploadFileToPosit = async (req: Request, res: Response) => {
     const archivoUrl = `/uploads/${req.file.filename}`;
     const archivoNombre = req.file.originalname;
 
+    const boardQuery: any = { _id: boardId, 'posits.posit_id': positId };
+    if (user) {
+      boardQuery.participantes = {
+        $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+      };
+    } else {
+      boardQuery.participantes = {
+        $elemMatch: { guest_id: req.body.guestId, permiso: { $in: ['admin', 'editor'] } }
+      };
+    }
+
     const board = await Board.findOneAndUpdate(
-      {
-        _id: boardId,
-        'posits.posit_id': positId,
-        participantes: {
-          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
-        }
-      },
+      boardQuery,
       {
         $set: {
           'posits.$.archivoUrl': archivoUrl,
@@ -611,7 +661,7 @@ export const uploadFileToPosit = async (req: Request, res: Response) => {
 // 12. Borrar Archivo de un Posit (NUEVO)
 export const deleteFileFromPosit = async (req: Request, res: Response) => {
   const { boardId, positId } = req.params;
-  const user = req.currentUser!;
+  const user = req.currentUser;
 
   try {
     // 1. Buscar el posit para saber la ruta del archivo
@@ -624,15 +674,20 @@ export const deleteFileFromPosit = async (req: Request, res: Response) => {
     // 2. Si tiene archivo, borrarlo del disco
     eliminarArchivoFisico(posit.archivoUrl);
 
-    // 3. Quitar del documento en MongoDB
+    // 3. Quitar del documento en MongoDB con permisos
+    const boardQuery: any = { _id: boardId, 'posits.posit_id': positId };
+    if (user) {
+      boardQuery.participantes = {
+        $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+      };
+    } else {
+      boardQuery.participantes = {
+        $elemMatch: { guest_id: req.body.guestId, permiso: { $in: ['admin', 'editor'] } }
+      };
+    }
+
     const updatedBoard = await Board.findOneAndUpdate(
-      {
-        _id: boardId,
-        'posits.posit_id': positId,
-        participantes: {
-          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
-        }
-      },
+      boardQuery,
       {
         $unset: {
           'posits.$.archivoUrl': "",
@@ -659,42 +714,61 @@ export const deleteFileFromPosit = async (req: Request, res: Response) => {
 export const joinBoardViaLink = async (req: Request, res: Response) => {
   const { boardId } = req.params;
   const { role } = req.body; // 'editor' o 'lector'
-  const user = req.currentUser!;
+  const user = req.currentUser; // Ahora es opcional
 
   try {
     // 1. Verificar si el tablero existe
     const board = await Board.findById(boardId);
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
 
-    // 2. Verificar si ya es participante
-    const isParticipant = board.participantes.some(p => {
-      const puid = (p.usuario_id as any)?._id || p.usuario_id;
-      return puid.toString() === user._id.toString();
+    // 2. Verificar si ya es participante y actualizar datos si es necesario
+    const guestId_req = req.body.guestId;
+    let userName_final = req.body.nombre || (user ? user.email : 'Invitado');
+
+    const pIndex = board.participantes.findIndex(p => {
+      if (user) {
+        const puid = (p.usuario_id as any)?._id || p.usuario_id;
+        if (puid && puid.toString() === user._id.toString()) return true;
+      }
+      if (guestId_req && p.guest_id === guestId_req) return true;
+      // Fallback: si el usuario_id coincide con el guestId_req (por registros antiguos)
+      if (guestId_req && p.usuario_id && p.usuario_id === guestId_req) return true;
+      return false;
     });
 
-    if (isParticipant) {
-      return res.json({ message: 'Ya eres participante de este tablero', board });
+    const finalRole = role === 'editor' ? 'editor' : 'lector';
+
+    if (pIndex !== -1) {
+      // YA EXISTE: Actualizamos nombre y rol
+      board.participantes[pIndex].nombre = userName_final;
+      board.participantes[pIndex].permiso = finalRole;
+      if (guestId_req) board.participantes[pIndex].guest_id = guestId_req;
+
+      board.markModified('participantes'); // Obligamos a Mongoose a detectar el cambio en el sub-array
+      await board.save();
+      console.log(`[joinBoard] Datos actualizados para: ${userName_final} (${finalRole})`);
+      emitirActualizacion(req, boardId, 'userJoined');
+      return res.json({ message: 'Datos de colaborador actualizados', board });
     }
 
-    // 3. Añadir como participante con el rol solicitado
-    const updatedBoard = await Board.findByIdAndUpdate(
-      boardId,
-      {
-        $addToSet: {
-          participantes: {
-            usuario_id: user._id,
-            permiso: role === 'editor' ? 'editor' : 'lector',
-            fecha_incorporacion: new Date()
-          }
-        }
-      },
-      { new: true }
-    );
+    // 3. NO EXISTE: Crear nuevo participante
+    const nuevoParticipante = {
+      usuario_id: user ? user._id : undefined,
+      guest_id: user ? undefined : (guestId_req || `guest_${new Date().getTime()}`),
+      nombre: userName_final,
+      permiso: finalRole,
+      fecha_incorporacion: new Date()
+    };
+
+    board.participantes.push(nuevoParticipante as any);
+    await board.save();
+
+    console.log(`[joinBoard] Nuevo colaborador añadido: ${userName_final} (${finalRole})`);
 
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'userJoined');
 
-    res.json({ message: 'Te has unido al tablero', board: updatedBoard });
+    res.json({ message: 'Te has unido al tablero', board });
 
   } catch (error) {
     console.error('Error al unirse al tablero:', error);

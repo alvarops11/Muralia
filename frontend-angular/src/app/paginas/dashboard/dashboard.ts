@@ -9,7 +9,7 @@ import { NotificationService } from '../../services/notification.service';
 interface Board {
   _id: string;
   titulo: string;
-  privacidad: 'privado' | 'publico';
+  privacidad: 'privado' | 'publico' | 'enlace-abierto';
   creador: string;
 }
 
@@ -41,7 +41,7 @@ export class Dashboard implements OnInit {
   showCreateModal = false;
   newBoardTitle = '';
   newBoardDescription = '';
-  newBoardPrivacy: 'publico' | 'privado' = 'privado';
+  newBoardPrivacy: 'publico' | 'privado' | 'enlace-abierto' = 'enlace-abierto';
 
   // User Menu State
   showUserMenu = false;
@@ -84,7 +84,7 @@ export class Dashboard implements OnInit {
   openCreateModal() {
     this.newBoardTitle = '';
     this.newBoardDescription = '';
-    this.newBoardPrivacy = 'privado';
+    this.newBoardPrivacy = 'enlace-abierto';
     this.showCreateModal = true;
     this.cdr.detectChanges();
   }
@@ -114,7 +114,8 @@ export class Dashboard implements OnInit {
       },
       error: (err) => {
         console.error('Error creating board:', err);
-        this.notify.error('Error al crear el mural. Por favor, intenta de nuevo.');
+        const msg = err.error?.messages?.join(', ') || err.error?.error || 'Error al crear el mural';
+        this.notify.error(msg);
       }
     });
   }

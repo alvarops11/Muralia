@@ -41,17 +41,32 @@ export class Mural implements OnInit, OnDestroy {
   // Helper para mostrar nombres reales o IDs
   getMemberName(u: any): string {
     if (!u) return 'Anónimo';
-    // Si es un objeto populado { _id, email, nombre? }
+
+    // 1. Si es un POST-IT { posit_id, autor_id, nombre_autor... }
+    if (typeof u === 'object' && u.posit_id) {
+      if (u.nombre_autor) return u.nombre_autor;
+      u = u.autor_id; // Pasamos a analizar el autor_id
+    }
+
+    // 2. Si es un objeto de PARTICIPANTE { usuario_id, nombre?, permiso..., guest_id? }
+    if (typeof u === 'object' && (u.usuario_id !== undefined || u.guest_id !== undefined)) {
+      if (u.nombre) return u.nombre;
+      if (u.guest_id) return 'Invitado';
+      u = u.usuario_id; // Pasamos a analizar el usuario_id
+    }
+
+    // 3. Si u es el objeto de USUARIO populado { _id, email, nombre? }
     if (typeof u === 'object') {
       if (u.nombre) return u.nombre;
       if (u.email) return u.email.split('@')[0];
-      // Si solo tiene ID, limpiamos el prefijo 'usuario_' si existe
       let id = u._id || '';
       return (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
     }
-    // Si es un string (ID o Email)
+
+    // 4. Si u es un string directo (ID o Email)
     const str = u + '';
     if (str.includes('@')) return str.split('@')[0];
+    if (str.startsWith('guest_')) return 'Invitado';
     return str.replace('usuario_', '').slice(0, 10);
   }
 
@@ -62,6 +77,13 @@ export class Mural implements OnInit, OnDestroy {
   mostrarExportar = false;
   mostrarEstadisticas = false;
   mostrarComentarios = false;
+
+  // Guest Access State
+  mostrarLoginInvitado = false;
+  nombreInvitado = '';
+  guestId: string | null = null;
+  private isListening = false;
+  private guardandoInvitado = false; // Flag para evitar bucles de unión
   positComentarios: any = null; // Posit seleccionado para ver comentarios
   guardandoPosit = false;
   subiendoArchivo = false;
@@ -94,118 +116,110 @@ export class Mural implements OnInit, OnDestroy {
 
     if (finalId) {
       this.id = finalId;
-
-      // 1. Carga inicial
+      // 1. Carga inicial (Llamará a escucharCambios y verificarInvitacion si es necesario)
       this.cargar();
-
-      // 2. Unirse a la sala de Socket.io
-      this.wsService.joinBoard(this.id);
-
-      // 3. Suscribirse a cambios en DB (Sync)
-      this.subs.push(
-        this.wsService.onUpdate().subscribe((data: any) => {
-          console.log('🔄 Update DB:', data);
-          this.cargar(true); // Recarga silenciosa
-        })
-      );
-
-      // 4. Suscribirse a movimientos de otros (Ghosts)
-      this.subs.push(
-        this.wsService.onDragMove().subscribe((data: any) => {
-          // console.log('👻 Ghost Move:', data); // Debug
-          // Buscamos el original para copiar color/título
-          const original = this.board?.posits.find((p: any) => p.posit_id === data.positId);
-          if (original) {
-            this.ghosts[data.positId] = {
-              x: data.x,
-              y: data.y,
-              usuario: data.usuario,
-              color: original.color,
-              titulo: original.titulo
-            };
-            this.cd.detectChanges();
-          }
-        })
-      );
-
-      // 5. Borrar fantasma cuando el otro usuario suelta
-      this.subs.push(
-        this.wsService.onDragStop().subscribe((data: any) => {
-          delete this.ghosts[data.positId];
-          this.cd.detectChanges();
-        })
-      );
-
-      // 6. Configurar Throttling para mis movimientos (máx 1 envío cada 16ms -> ~60fps)
-      this.subs.push(
-        this.dragSubject.pipe(throttleTime(16)).subscribe((pos) => {
-          const name = this.auth.getUserName();
-          this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, name);
-        })
-      );
-
-      // --- Gestión de Invitaciones vía Link ---
-      this.subs.push(
-        this.route.queryParamMap.subscribe(params => {
-          const invite = params.get('invite');
-          const role = params.get('role');
-
-          if (invite === 'true' && role && this.id) {
-            this.api.joinBoard(this.id, role).subscribe({
-              next: () => {
-                this.notify.success(`¡Bienvenido! Te has unido como ${role}`);
-                // Limpiar la URL para no volver a unirse al recargar
-                this.router.navigate([], {
-                  queryParams: { invite: null, role: null },
-                  queryParamsHandling: 'merge',
-                  replaceUrl: true
-                });
-                this.cargar(true);
-              },
-              error: (err) => {
-                console.error('Error al unirse via link:', err);
-                this.cargar(true);
-              }
-            });
-          }
-        })
-      );
-
-      // 7. Bloqueos de edición
-      this.subs.push(
-        this.wsService.onLock().subscribe((data: any) => {
-          this.locks[data.positId] = data.usuario;
-          this.cd.detectChanges();
-        })
-      );
-
-      this.subs.push(
-        this.wsService.onUnlock().subscribe((data: any) => {
-          delete this.locks[data.positId];
-
-          // Si me han desbloqueado el posit que estoy editando (ej: por tiempo agotado en server)
-          if (this.isEditing && this.editPositId === data.positId) {
-            this.notify.info("Se ha agotado el tiempo de edición.");
-            this.cerrarModal();
-          }
-
-          this.cd.detectChanges();
-        })
-      );
-
-      // Socket: Usuario nuevo unido via link
-      this.subs.push(
-        this.wsService.onUpdate().subscribe((data: any) => {
-          if (data.accion === 'userJoined') {
-            this.cargar(true);
-          }
-        })
-      );
-
     } else {
       this.error = "No se ha encontrado ID";
       this.cd.detectChanges();
     }
+  }
+
+  escucharCambios() {
+    if (this.isListening) return;
+    this.isListening = true;
+
+    // 1. Unirse a la sala de Socket.io (si no estamos ya)
+    this.wsService.joinBoard(this.id!);
+
+    // 2. Suscribirse a cambios en DB (Sync)
+    this.subs.push(
+      this.wsService.onUpdate().subscribe((data: any) => {
+        console.log('🔄 Update DB:', data);
+        if (data.accion === 'userJoined') {
+          console.log('👥 Usuario nuevo unido');
+        }
+        this.cargar(true); // Recarga silenciosa
+      })
+    );
+
+    // 3. Suscribirse a movimientos de otros (Ghosts)
+    this.subs.push(
+      this.wsService.onDragMove().subscribe((data: any) => {
+        const original = this.board?.posits.find((p: any) => p.posit_id === data.positId);
+        if (original) {
+          this.ghosts[data.positId] = {
+            x: data.x,
+            y: data.y,
+            usuario: data.usuario,
+            color: original.color,
+            titulo: original.titulo
+          };
+          this.cd.detectChanges();
+        }
+      })
+    );
+
+    // 4. Borrar fantasma cuando el otro usuario suelta
+    this.subs.push(
+      this.wsService.onDragStop().subscribe((data: any) => {
+        delete this.ghosts[data.positId];
+        this.cd.detectChanges();
+      })
+    );
+
+    // 5. Configurar Throttling para mis movimientos
+    this.subs.push(
+      this.dragSubject.pipe(throttleTime(16)).subscribe((pos) => {
+        const name = this.auth.getUserName() || this.getGuestData()?.nombre || 'Anónimo';
+        this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, name);
+      })
+    );
+
+    // 6. Bloqueos de edición
+    this.subs.push(
+      this.wsService.onLock().subscribe((data: any) => {
+        this.locks[data.positId] = data.usuario;
+        this.cd.detectChanges();
+      })
+    );
+
+    this.subs.push(
+      this.wsService.onUnlock().subscribe((data: any) => {
+        delete this.locks[data.positId];
+        if (this.isEditing && this.editPositId === data.positId) {
+          this.notify.info("Se ha agotado el tiempo de edición.");
+          this.cerrarModal();
+        }
+        this.cd.detectChanges();
+      })
+    );
+  }
+
+  verificarInvitacion() {
+    this.subs.push(
+      this.route.queryParamMap.subscribe(params => {
+        const invite = params.get('invite');
+        const role = params.get('role');
+
+        if (invite === 'true' && role && this.id) {
+          this.api.joinBoard(this.id, role).subscribe({
+            next: () => {
+              this.notify.success(`¡Bienvenido! Te has unido como ${role}`);
+              this.router.navigate([], {
+                queryParams: { invite: null, role: null },
+                queryParamsHandling: 'merge',
+                replaceUrl: true
+              });
+              this.cargar(true);
+            },
+            error: (err) => {
+              console.error('Error al unirse via link:', err);
+              this.cargar(true);
+            }
+          });
+        }
+      })
+    );
   }
 
   ngOnDestroy() {
@@ -230,16 +244,61 @@ export class Mural implements OnInit, OnDestroy {
       next: (data) => {
         data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
         this.board = data;
-        this.error = ''; // Limpiar cualquier error previo (importante al unirse via link)
+        this.error = '';
 
-        // Determinar rol del usuario actual
         const uid = this.auth.getUserId();
-        const participante = data.participantes?.find((p: any) => {
+        const guestData = this.getGuestData();
+
+        // 1. Verificar si ya soy participante con cuenta real
+        let participante = data.participantes?.find((p: any) => {
           const puid = p.usuario_id?._id || p.usuario_id;
-          return puid === uid;
+          return uid && puid === uid;
         });
+
+        // 2. Si no, verificar si soy participante con Guest ID
+        if (!participante && guestData) {
+          console.log('[Mural] Soy invitado, buscando mi guestId:', guestData.guestId);
+          participante = data.participantes?.find((p: any) => {
+            // Prioridad absoluta al nuevo guest_id
+            if (p.guest_id && p.guest_id === guestData.guestId) {
+              console.log('[Mural] ¡Encontrado por guest_id!', p.nombre);
+              return true;
+            }
+            // Fallback para IDs antiguos en usuario_id
+            const puid = (p.usuario_id?._id || p.usuario_id || '').toString();
+            const matching = puid === guestData.guestId;
+            if (matching) console.log('[Mural] ¡Encontrado por usuario_id (fallback)!', p.nombre);
+            return matching;
+          });
+        }
+
         if (participante) {
+          console.log('[Mural] Participante reconocido:', JSON.stringify(participante));
           this.currentUserRole = participante.permiso || 'lector';
+          console.log('[Mural] Rol activado:', this.currentUserRole);
+          this.cargando = false;
+          if (!this.isListening) {
+            this.escucharCambios();
+          }
+        } else {
+          console.log('[Mural] Usuario no es participante aún.');
+          // No soy participante.
+          // Si el tablero es 'enlace-abierto', iniciamos onboarding de invitado
+          if (data.privacidad === 'enlace-abierto') {
+            if (guestData) {
+              console.log('[Mural] Tengo guestData, intentando auto-unirse...');
+              this.unirseComoInvitado(guestData.nombre, guestData.guestId);
+            } else {
+              console.log('[Mural] No tengo guestData, pidiendo nombre...');
+              this.mostrarLoginInvitado = true;
+              this.cargando = false;
+            }
+          } else {
+            console.log('[Mural] No es enlace-abierto, intentando verificar invitación...');
+            this.verificarInvitacion();
+            // Si no es abierto, debemos parar el loading
+            this.cargando = false;
+          }
         }
 
         // Actualizar el posit del panel de comentarios si está abierto
@@ -250,7 +309,6 @@ export class Mural implements OnInit, OnDestroy {
           }
         }
 
-        this.cargando = false;
         this.cd.detectChanges();
       },
       error: (err) => {
@@ -305,7 +363,10 @@ export class Mural implements OnInit, OnDestroy {
     this.alSoltarDrag(posit);
 
     if (this.id) {
-      this.api.updatePosit(this.id, posit.posit_id, { orden: nuevoOrden }).subscribe({
+      this.api.updatePosit(this.id, posit.posit_id, {
+        orden: nuevoOrden,
+        ...(this.auth.getUserId() ? {} : { guestId: this.getGuestData()?.guestId })
+      }).subscribe({
         next: () => console.log("Guardado"),
         error: () => { this.notify.error("Error al guardar la posición"); this.cargar(); }
       });
@@ -427,10 +488,13 @@ export class Mural implements OnInit, OnDestroy {
 
     if (this.isEditing && this.editPositId) {
       // Editar
+      const guestData = this.getGuestData();
       this.api.updatePosit(this.id, this.editPositId, {
         titulo: this.nuevoPosit.titulo.trim(),
         contenido: this.nuevoPosit.contenido || '',
-        color: this.nuevoPosit.color
+        color: this.nuevoPosit.color,
+        // Si no hay usuario logueado, mandamos datos de invitado para el check de permisos
+        ...(this.auth.getUserId() ? {} : { nombre: guestData?.nombre, guestId: guestData?.guestId })
       }).subscribe({
         next: () => {
           this.guardandoPosit = false;
@@ -447,11 +511,15 @@ export class Mural implements OnInit, OnDestroy {
     } else {
       // Crear
       const contenido = this.nuevoPosit.contenido || '';
+      const guestData = this.getGuestData();
+
       this.api.createPosit(this.id, {
         titulo: this.nuevoPosit.titulo.trim() || (contenido ? (contenido.substring(0, 30) + (contenido.length > 30 ? '...' : '')) : 'Nota sin título'),
         contenido: contenido,
         color: this.nuevoPosit.color,
-        orden: 0
+        orden: 0,
+        // Si no hay usuario logueado, mandamos datos de invitado para autoría
+        ...(this.auth.getUserId() ? {} : { nombre: guestData?.nombre, guestId: guestData?.guestId })
       }).subscribe({
         next: () => {
           this.guardandoPosit = false;
@@ -491,7 +559,7 @@ export class Mural implements OnInit, OnDestroy {
   async borrarArchivo(positId: string | null) {
     if (!this.id || !positId) return;
     if (await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar el archivo adjunto?")) {
-      this.api.deleteFile(this.id, positId).subscribe({
+      this.api.deleteFile(this.id, positId, { guestId: this.getGuestData()?.guestId }).subscribe({
         next: () => {
           this.notify.success("Archivo eliminado");
           this.cargar(true);
@@ -530,7 +598,7 @@ export class Mural implements OnInit, OnDestroy {
     }
 
     if (this.id && await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar este posit? Esta acción no se puede deshacer y se perderá toda la información del posit.")) {
-      this.api.deletePosit(this.id, pid).subscribe(() => this.cargar());
+      this.api.deletePosit(this.id, pid, { guestId: this.getGuestData()?.guestId }).subscribe(() => this.cargar());
     }
   }
 
@@ -581,7 +649,11 @@ export class Mural implements OnInit, OnDestroy {
         this.cd.detectChanges();
 
         // Enviar al backend
-        this.api.addComment(this.id, pid, t).subscribe({
+        const guestData = this.getGuestData();
+        this.api.addComment(this.id, pid, {
+          contenido: t.trim(),
+          ...(this.auth.getUserId() ? {} : { guestId: guestData?.guestId, nombre: guestData?.nombre })
+        }).subscribe({
           next: (response: any) => {
             // La respuesta del backend tiene el board actualizado
             // Actualizamos solo el posit específico para mantener el orden
@@ -642,7 +714,7 @@ export class Mural implements OnInit, OnDestroy {
       this.cd.detectChanges();
 
       // Enviar al backend
-      this.api.deleteComment(this.id, pid, cid).subscribe({
+      this.api.deleteComment(this.id, pid, cid, { guestId: this.getGuestData()?.guestId }).subscribe({
         next: () => {
           this.cargar(true); // Recarga silenciosa para sincronizar
         },
@@ -698,5 +770,61 @@ export class Mural implements OnInit, OnDestroy {
         setTimeout(() => el.classList.remove('highlight-posit'), 2000);
       }
     }, 100);
+  }
+
+  // --- GUEST LOGIC ---
+  getGuestData() {
+    const data = localStorage.getItem('muralia_guest');
+    return data ? JSON.parse(data) : null;
+  }
+
+  confirmarNombreInvitado() {
+    if (!this.nombreInvitado.trim()) return;
+    const gid = 'guest_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('muralia_guest', JSON.stringify({ nombre: this.nombreInvitado, guestId: gid }));
+    this.unirseComoInvitado(this.nombreInvitado, gid);
+  }
+
+  unirseComoInvitado(nombre: string, guestId: string) {
+    if (this.guardandoInvitado) {
+      console.log('[Mural] Ya hay una unión en curso, ignorando...');
+      return;
+    }
+    this.guardandoInvitado = true;
+
+    // Evitar bucles infinitos: si ya lo intentamos en los últimos 10 segundos para este board, parar.
+    const lastJoinKey = `last_join_${this.id}`;
+    const lastJoinTime = sessionStorage.getItem(lastJoinKey);
+    if (lastJoinTime && (Date.now() - parseInt(lastJoinTime)) < 10000) {
+      console.warn('[Mural] Intento de unión demasiado frecuente. Sincronización en curso...');
+      this.cargando = true;
+      return;
+    }
+    sessionStorage.setItem(lastJoinKey, Date.now().toString());
+
+    this.mostrarLoginInvitado = false;
+    this.cargando = true;
+    this.cd.detectChanges();
+
+    console.log('[Mural] Uniéndose como invitado:', { nombre, guestId });
+
+    this.api.joinBoard(this.id!, 'editor', { nombre, guestId }).subscribe({
+      next: () => {
+        console.log('[Mural] Unión exitosa, esperando recarga...');
+        this.guardandoInvitado = false;
+        this.notify.success(`¡Bienvenido ${nombre}!`);
+        // Pequeño delay para dejar que Angular respire
+        setTimeout(() => this.cargar(), 100);
+      },
+      error: (err) => {
+        console.error('[Mural] Error al unirse como invitado:', err);
+        this.guardandoInvitado = false;
+        this.notify.error('Error al entrar como invitado');
+        this.cargando = false;
+        this.cd.detectChanges();
+        // Limpiar para permitir reintento manual
+        sessionStorage.removeItem(lastJoinKey);
+      }
+    });
   }
 }

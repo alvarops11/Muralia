@@ -6,7 +6,7 @@ export const createBoardSchema = z.object({
   _id: z.string().optional(), // Opcional si decides generarlo en backend
   titulo: z.string().min(3, "El título debe tener al menos 3 caracteres"),
   descripcion: z.string().optional(),
-  privacidad: z.enum(['publico', 'privado']).optional(),
+  privacidad: z.enum(['publico', 'privado', 'enlace-abierto']).optional(),
   colorFondo: z.string().regex(/^#/, "Debe ser un color Hex válido").optional(),
   formato: z.enum(['kanban', 'lista']).optional()
 });
@@ -36,7 +36,7 @@ export const inviteUserSchema = z.object({
 export const updateBoardSchema = z.object({
   titulo: z.string().min(3, "El título es muy corto").optional(),
   colorFondo: z.string().regex(/^#/, "Debe ser color Hex").optional(),
-  privacidad: z.enum(['publico', 'privado']).optional()
+  privacidad: z.enum(['publico', 'privado', 'enlace-abierto']).optional()
 });
 
 // Validar comentario nuevo

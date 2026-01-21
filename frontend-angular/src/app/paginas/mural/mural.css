@@ -1385,3 +1385,167 @@ body {
     opacity: 1;
     pointer-events: all;
 }
+/* --- ESTILOS DE ADJUNTOS PREMIUM --- */
+.note-attachment {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.4);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    border-radius: 12px;
+    font-size: 0.85rem;
+    color: #374151;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+}
+
+.note-attachment:hover {
+    background: rgba(255, 255, 255, 0.6);
+    transform: translateY(-2px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+}
+
+.attachment-icon {
+    font-size: 1.2rem;
+}
+
+.attachment-name {
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    font-weight: 500;
+}
+
+/* Vista Previa de Imagen */
+.note-image-preview {
+    margin-top: 12px;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.5);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    transition: transform 0.3s ease;
+    max-height: 180px;
+    background: #f1f5f9;
+}
+
+.note-image-preview:hover {
+    transform: scale(1.02);
+}
+
+.note-image-preview img {
+    width: 100%;
+    height: auto;
+    max-height: 180px;
+    object-fit: contain;
+    display: block;
+}
+
+/* Reproductor de Audio */
+.note-audio-preview {
+    margin-top: 12px;
+    width: 100%;
+}
+
+.note-audio-preview audio {
+    width: 100%;
+    height: 36px;
+    border-radius: 99px;
+    filter: sepia(20%) saturate(70%) grayscale(1);
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.note-audio-preview audio:hover {
+    opacity: 1;
+}
+
+/* Modal Premium */
+.attachment-info-modal-premium {
+    margin-top: 15px;
+    display: flex;
+    gap: 15px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+}
+
+.attachment-preview-mini {
+    width: 60px;
+    height: 60px;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.attachment-preview-mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.attachment-details-modal {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 8px;
+    min-width: 0;
+}
+
+.attachment-name-modal {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #1e293b;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.attachment-actions-modal {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-action-modal {
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-action-modal.download {
+    background: #6366f1;
+    color: white;
+}
+
+.btn-action-modal.download:hover {
+    background: #4f46e5;
+    box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.4);
+}
+
+.btn-action-modal.delete {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.btn-action-modal.delete:hover {
+    background: #fecaca;
+    box-shadow: 0 4px 6px -1px rgba(239, 68, 68, 0.2);
+}
+
+.info-text-mural {
+    font-size: 0.8rem;
+    color: #64748b;
+    margin-top: 8px;
+    font-style: italic;
+}

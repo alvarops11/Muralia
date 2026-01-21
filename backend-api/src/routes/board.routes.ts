@@ -1,12 +1,14 @@
 // file: src/routes/board.routes.ts
 import { Router } from 'express';
-import { 
-  createBoard, getMyBoards, getBoardById, updateBoard, deleteBoard, 
-  addPosit, updatePosit, deletePosit, 
+import {
+  createBoard, getMyBoards, getBoardById, updateBoard, deleteBoard,
+  addPosit, updatePosit, deletePosit,
   addComment, deleteComment, // <--- NUEVO
-  inviteUser, removeParticipant // <--- NUEVO
+  inviteUser, removeParticipant, // <--- NUEVO
+  uploadFileToPosit, deleteFileFromPosit // <--- NUEVO
 } from '../controllers/board.controller';
 import { validateToken } from '../middlewares/auth.middleware';
+import { upload } from '../middlewares/upload.middleware';
 
 const router = Router();
 router.use(validateToken);
@@ -22,6 +24,8 @@ router.delete('/:boardId', deleteBoard);
 router.post('/:boardId/posits', addPosit);
 router.put('/:boardId/posits/:positId', updatePosit);
 router.delete('/:boardId/posits/:positId', deletePosit);
+router.post('/:boardId/posits/:positId/upload', upload.single('archivo'), uploadFileToPosit); // <--- NUEVO
+router.delete('/:boardId/posits/:positId/file', deleteFileFromPosit); // <--- NUEVO
 
 // --- COMENTARIOS ---
 router.post('/:boardId/posits/:positId/comments', addComment);

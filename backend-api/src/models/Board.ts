@@ -18,6 +18,8 @@ interface IPosit {
   posicion: { x: number; y: number; orden: number };
   destacado: boolean;
   imagen?: string;
+  archivoUrl?: string;
+  archivoNombre?: string;
   autor_id: string;
   fecha_creacion: Date;
   comentarios: IComentario[];
@@ -65,6 +67,8 @@ const PositSchema = new Schema({
   },
   destacado: { type: Boolean, default: false },
   imagen: { type: String },
+  archivoUrl: { type: String },
+  archivoNombre: { type: String },
   autor_id: { type: String, ref: 'User', required: true },
   fecha_creacion: { type: Date, default: Date.now },
   comentarios: [ComentarioSchema]

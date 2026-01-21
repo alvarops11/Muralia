@@ -27,7 +27,30 @@
             <label class="form-label-mural attachment-label">
                 <span>🔗 Adjuntar archivo</span>
             </label>
-            <button class="file-button-mural">Seleccionar archivo</button>
+            <input type="file" #fileInput style="display: none" (change)="alSeleccionarArchivo($event, editPositId)">
+            <button class="file-button-mural" (click)="fileInput.click()" [disabled]="!isEditing || subiendoArchivo">
+                {{ subiendoArchivo ? 'Subiendo...' : 'Seleccionar archivo' }}
+            </button>
+            <p *ngIf="!isEditing" class="info-text-mural">Primero guarda el post-it para adjuntar archivos.</p>
+
+            <div *ngIf="isEditing && nuevoPosit && board" class="current-attachment">
+                <div *ngFor="let p of board.posits">
+                    <div *ngIf="p.posit_id === editPositId && p.archivoUrl" class="attachment-info-modal-premium">
+                        <div class="attachment-preview-mini" *ngIf="getFileType(p.archivoNombre) === 'image'">
+                            <img [src]="getFullUrl(p.archivoUrl)" [alt]="p.archivoNombre">
+                        </div>
+                        <div class="attachment-details-modal">
+                            <span class="attachment-name-modal">{{ p.archivoNombre }}</span>
+                            <div class="attachment-actions-modal">
+                                <button class="btn-action-modal download" (click)="descargarArchivo(p.archivoUrl)">⬇️
+                                    Descargar</button>
+                                <button class="btn-action-modal delete" (click)="borrarArchivo(editPositId)">🗑️
+                                    Borrar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div class="modal-footer-mural">
@@ -185,6 +208,25 @@
 
                 <div class="note-author">
                     👤 {{ getMemberName(posit.autor_id) }}
+                </div>
+
+                <!-- Vista Previa de Imagen -->
+                <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'image'" class="note-image-preview"
+                    (click)="descargarArchivo(posit.archivoUrl); $event.stopPropagation()">
+                    <img [src]="getFullUrl(posit.archivoUrl)" [alt]="posit.archivoNombre">
+                </div>
+
+                <!-- Reproductor de Audio -->
+                <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'audio'" class="note-audio-preview"
+                    (click)="$event.stopPropagation()">
+                    <audio controls [src]="getFullUrl(posit.archivoUrl)"></audio>
+                </div>
+
+                <!-- Archivo Genérico -->
+                <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'other'" class="note-attachment"
+                    (click)="descargarArchivo(posit.archivoUrl); $event.stopPropagation()">
+                    <span class="attachment-icon">📄</span>
+                    <span class="attachment-name">{{ posit.archivoNombre }}</span>
                 </div>
 
                 <div class="btn-comment" (click)="abrirComentarios(posit); $event.stopPropagation()">

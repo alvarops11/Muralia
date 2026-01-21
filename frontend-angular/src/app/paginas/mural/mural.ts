@@ -63,6 +63,7 @@ export class Mural implements OnInit, OnDestroy {
   mostrarComentarios = false;
   positComentarios: any = null; // Posit seleccionado para ver comentarios
   guardandoPosit = false;
+  subiendoArchivo = false;
   isEditing = false;
   editPositId: string | null = null;
   nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
@@ -415,6 +416,57 @@ export class Mural implements OnInit, OnDestroy {
         }
       });
     }
+  }
+
+  alSeleccionarArchivo(event: any, positId: string | null) {
+    const file = event.target.files[0];
+    if (!file || !this.id || !positId) return;
+
+    this.subiendoArchivo = true;
+    this.api.uploadFile(this.id, positId, file).subscribe({
+      next: (res: any) => {
+        this.subiendoArchivo = false;
+        this.notify.success("Archivo subido correctamente");
+        this.cargar(true);
+        // Si estamos en modal de edición, podríamos querer actualizar la vista previa
+        // Pero cargar(true) ya debería refrescar el board.
+      },
+      error: () => {
+        this.subiendoArchivo = false;
+        this.notify.error("Error al subir el archivo");
+      }
+    });
+  }
+
+  async borrarArchivo(positId: string | null) {
+    if (!this.id || !positId) return;
+    if (await this.notify.confirm("🗑️ ¿Estás seguro de que quieres borrar el archivo adjunto?")) {
+      this.api.deleteFile(this.id, positId).subscribe({
+        next: () => {
+          this.notify.success("Archivo eliminado");
+          this.cargar(true);
+        },
+        error: () => this.notify.error("Error al eliminar el archivo")
+      });
+    }
+  }
+
+  descargarArchivo(url: string) {
+    window.open(this.getFullUrl(url), '_blank');
+  }
+
+  getFullUrl(path: string): string {
+    if (!path) return '';
+    return `http://localhost:3000${path}`;
+  }
+
+  getFileType(filename: string): 'image' | 'audio' | 'video' | 'other' {
+    if (!filename) return 'other';
+    const ext = filename.trim().split('.').pop()?.toLowerCase();
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'svg'].includes(ext!)) return 'image';
+    if (['mp3', 'wav', 'ogg', 'm4a', 'aac'].includes(ext!)) return 'audio';
+    if (['mp4', 'webm', 'ogg'].includes(ext!)) return 'video';
+    return 'other';
   }
 
   crearPosit() {

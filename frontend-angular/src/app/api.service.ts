@@ -18,6 +18,14 @@ export class ApiService {
   createPosit(boardId: string, data: any) { return this.http.post(`${this.apiUrl}/${boardId}/posits`, data); }
   updatePosit(boardId: string, positId: string, data: any) { return this.http.put(`${this.apiUrl}/${boardId}/posits/${positId}`, data); }
   deletePosit(boardId: string, positId: string) { return this.http.delete(`${this.apiUrl}/${boardId}/posits/${positId}`); }
+  uploadFile(boardId: string, positId: string, file: File) {
+    const formData = new FormData();
+    formData.append('archivo', file);
+    return this.http.post(`${this.apiUrl}/${boardId}/posits/${positId}/upload`, formData);
+  }
+  deleteFile(boardId: string, positId: string) {
+    return this.http.delete(`${this.apiUrl}/${boardId}/posits/${positId}/file`);
+  }
 
   // --- COMENTARIOS ---
   addComment(boardId: string, positId: string, contenido: string) {

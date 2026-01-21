@@ -2,6 +2,8 @@
 
 import { Request, Response } from 'express';
 import { Types } from 'mongoose';
+import path from 'path';
+import fs from 'fs';
 import Board from '../models/Board';
 import { generateId } from '../utils/idGenerator';
 import User from '../models/User';
@@ -27,6 +29,28 @@ const emitirActualizacion = (req: Request, boardId: string, accion: string) => {
   }
 };
 // -----------------------------------
+
+// --- HELPER PARA BORRAR ARCHIVOS (NUEVO) ---
+const eliminarArchivoFisico = (archivoUrl?: string) => {
+  if (!archivoUrl) return;
+  try {
+    const relativePath = archivoUrl.startsWith('/') ? archivoUrl.substring(1) : archivoUrl;
+    // Estamos en src/controllers, uploads está en ../../uploads
+    const filePath = path.join(__dirname, '../../', relativePath);
+
+    console.log(`[DEBUG] Intentando borrar: ${filePath}`);
+
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+      console.log(`[SUCCESS] Archivo eliminado: ${filePath}`);
+    } else {
+      console.warn(`[WARN] El archivo no existe: ${filePath}`);
+    }
+  } catch (error) {
+    console.error('[ERROR] Error eliminando archivo físico:', error);
+  }
+};
+// -------------------------------------------
 
 export const createBoard = async (req: Request, res: Response) => {
   try {
@@ -231,7 +255,17 @@ export const deletePosit = async (req: Request, res: Response) => {
   const user = req.currentUser!;
 
   try {
-    const board = await Board.findOneAndUpdate(
+    // 1. Buscamos el board para ver si el posit tiene archivo
+    const board = await Board.findOne({ _id: boardId });
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+
+    const posit = board.posits.find(p => p.posit_id === positId);
+    if (posit && posit.archivoUrl) {
+      eliminarArchivoFisico(posit.archivoUrl);
+    }
+
+    // 2. Quitamos el posit del array
+    const result = await Board.findOneAndUpdate(
       {
         _id: boardId,
         participantes: {
@@ -244,7 +278,7 @@ export const deletePosit = async (req: Request, res: Response) => {
       { new: true }
     );
 
-    if (!board) return res.status(404).json({ error: 'No se pudo borrar (Tablero no encontrado)' });
+    if (!result) return res.status(403).json({ error: 'No tienes permisos para borrar' });
 
     // 🔥 SOCKET
     emitirActualizacion(req, boardId, 'deletePosit');
@@ -381,12 +415,21 @@ export const deleteBoard = async (req: Request, res: Response) => {
   const user = req.currentUser!;
 
   try {
-    const result = await Board.deleteOne({
+    // 1. Buscamos el tablero para limpiar archivos
+    const board = await Board.findOne({
       _id: boardId,
       participantes: { $elemMatch: { usuario_id: user._id, permiso: 'admin' } }
     });
 
-    if (result.deletedCount === 0) return res.status(403).json({ error: 'No se pudo borrar (Permisos o no existe)' });
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado o no eres admin' });
+
+    // 2. Borrar archivos físicos de todos los posits
+    board.posits.forEach(p => {
+      if (p.archivoUrl) eliminarArchivoFisico(p.archivoUrl);
+    });
+
+    // 3. Borrar el tablero de la DB
+    await Board.deleteOne({ _id: boardId });
 
     // 🔥 SOCKET (Para avisar a otros que se cierra)
     emitirActualizacion(req, boardId, 'deleteBoard');
@@ -512,5 +555,102 @@ export const deleteComment = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Error eliminando comentario:', error);
     res.status(500).json({ error: 'Error eliminando comentario', details: error.message });
+  }
+};
+
+// 11. Subir Archivo a un Posit (NUEVO)
+export const uploadFileToPosit = async (req: Request, res: Response) => {
+  const { boardId, positId } = req.params;
+  const user = req.currentUser!;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No se ha subido ningún archivo' });
+    }
+
+    // El middleware de multer guarda el archivo y pone info en req.file
+    const archivoUrl = `/uploads/${req.file.filename}`;
+    const archivoNombre = req.file.originalname;
+
+    const board = await Board.findOneAndUpdate(
+      {
+        _id: boardId,
+        'posits.posit_id': positId,
+        participantes: {
+          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+        }
+      },
+      {
+        $set: {
+          'posits.$.archivoUrl': archivoUrl,
+          'posits.$.archivoNombre': archivoNombre
+        }
+      },
+      { new: true }
+    );
+
+    if (!board) {
+      return res.status(404).json({ error: 'Tablero o Posit no encontrado' });
+    }
+
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'uploadFile');
+
+    res.json({
+      message: 'Archivo subido correctamente',
+      archivoUrl,
+      archivoNombre
+    });
+
+  } catch (error) {
+    console.error('Error al subir archivo:', error);
+    res.status(500).json({ error: 'Error interno al subir el archivo' });
+  }
+};
+
+// 12. Borrar Archivo de un Posit (NUEVO)
+export const deleteFileFromPosit = async (req: Request, res: Response) => {
+  const { boardId, positId } = req.params;
+  const user = req.currentUser!;
+
+  try {
+    // 1. Buscar el posit para saber la ruta del archivo
+    const board = await Board.findOne({ _id: boardId, 'posits.posit_id': positId });
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+
+    const posit = board.posits.find(p => p.posit_id === positId);
+    if (!posit) return res.status(404).json({ error: 'Posit no encontrado' });
+
+    // 2. Si tiene archivo, borrarlo del disco
+    eliminarArchivoFisico(posit.archivoUrl);
+
+    // 3. Quitar del documento en MongoDB
+    const updatedBoard = await Board.findOneAndUpdate(
+      {
+        _id: boardId,
+        'posits.posit_id': positId,
+        participantes: {
+          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+        }
+      },
+      {
+        $unset: {
+          'posits.$.archivoUrl': "",
+          'posits.$.archivoNombre': ""
+        }
+      },
+      { new: true }
+    );
+
+    if (!updatedBoard) return res.status(403).json({ error: 'No tienes permisos' });
+
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'deleteFile');
+
+    res.json({ message: 'Archivo eliminado' });
+
+  } catch (error) {
+    console.error('Error eliminando archivo:', error);
+    res.status(500).json({ error: 'Error eliminando el archivo' });
   }
 };

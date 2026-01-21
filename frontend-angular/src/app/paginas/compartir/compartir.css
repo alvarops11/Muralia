@@ -159,10 +159,39 @@
     color: #666;
 }
 
-/* --- Sección Invitar --- */
+.invite-row-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
 .invite-row {
     display: flex;
     gap: 10px;
+}
+
+.invite-row .form-input {
+    flex: 2;
+}
+
+.form-select-role {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #e2e8f0;
+    border-radius: 12px;
+    background-color: #f7fafc;
+    font-size: 14px;
+    outline: none;
+    cursor: pointer;
+}
+
+.form-select-role:focus {
+    border-color: #5570f1;
+    background-color: white;
+}
+
+.full-width {
+    width: 100%;
 }
 
 .invite-row .form-input {
@@ -174,7 +203,7 @@
     color: white;
     border: none;
     border-radius: 12px;
-    padding: 0 20px;
+    padding: 14px 20px;
     cursor: pointer;
     font-weight: 700;
     box-shadow: 0 4px 12px rgba(85, 112, 241, 0.3);

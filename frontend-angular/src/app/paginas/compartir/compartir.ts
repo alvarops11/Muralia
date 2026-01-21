@@ -14,8 +14,10 @@ export class Compartir {
   private notify = inject(NotificationService);
   @Input() boardId: string = '';
   @Input() participantes: any[] = [];
+  @Input() userRole: string = 'lector';
+  selectedPermiso: 'admin' | 'editor' | 'lector' = 'lector';
 
-  @Output() onInvite = new EventEmitter<string>();
+  @Output() onInvite = new EventEmitter<{ email: string, permiso: string }>();
   @Output() onRemove = new EventEmitter<string>();
   @Output() onClose = new EventEmitter<void>();
 
@@ -42,8 +44,15 @@ export class Compartir {
   }
 
   invite() {
+    if (this.userRole !== 'admin') {
+      this.notify.error("Solo los administradores pueden invitar");
+      return;
+    }
     if (this.newEmail.trim()) {
-      this.onInvite.emit(this.newEmail.trim());
+      this.onInvite.emit({
+        email: this.newEmail.trim(),
+        permiso: this.selectedPermiso
+      });
       this.newEmail = '';
     }
   }

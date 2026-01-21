@@ -28,8 +28,8 @@ export class ApiService {
   }
 
   // --- PARTICIPANTES ---
-  inviteUser(boardId: string, email: string) {
-    return this.http.post(`${this.apiUrl}/${boardId}/participants`, { email });
+  inviteUser(boardId: string, email: string, permiso: string = 'lector') {
+    return this.http.post(`${this.apiUrl}/${boardId}/participants`, { email, permiso });
   }
   removeParticipant(boardId: string, userId: string) {
     return this.http.delete(`${this.apiUrl}/${boardId}/participants/${userId}`);

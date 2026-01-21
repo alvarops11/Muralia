@@ -136,4 +136,20 @@ export class AuthService {
 
         return 'Usuario';
     }
+
+    /**
+     * Obtener el ID del usuario
+     */
+    getUserId(): string | null {
+        const userStr = localStorage.getItem(this.USER_KEY);
+        if (userStr) {
+            try {
+                const user = JSON.parse(userStr);
+                return user.id || user._id || null;
+            } catch (e) {
+                return null;
+            }
+        }
+        return null;
+    }
 }

@@ -103,7 +103,12 @@ export const addPosit = async (req: Request, res: Response) => {
     };
 
     const board = await Board.findOneAndUpdate(
-      { _id: boardId, 'participantes.usuario_id': user._id },
+      {
+        _id: boardId,
+        participantes: {
+          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+        }
+      },
       { $push: { posits: newPosit } },
       { new: true }
     );
@@ -131,7 +136,9 @@ export const updatePosit = async (req: Request, res: Response) => {
     // 1. Buscamos el tablero completo
     const board = await Board.findOne({
       _id: boardId,
-      'participantes.usuario_id': user._id
+      participantes: {
+        $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+      }
     });
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
@@ -227,7 +234,9 @@ export const deletePosit = async (req: Request, res: Response) => {
     const board = await Board.findOneAndUpdate(
       {
         _id: boardId,
-        'participantes.usuario_id': user._id
+        participantes: {
+          $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+        }
       },
       {
         $pull: { posits: { posit_id: positId } }

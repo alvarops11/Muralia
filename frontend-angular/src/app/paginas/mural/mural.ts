@@ -35,6 +35,7 @@ export class Mural implements OnInit, OnDestroy {
   board: any = null;
   cargando = false;
   error = '';
+  currentUserRole: 'admin' | 'editor' | 'lector' = 'lector';
 
   // Helper para mostrar nombres reales o IDs
   getMemberName(u: any): string {
@@ -192,6 +193,16 @@ export class Mural implements OnInit, OnDestroy {
         data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
         this.board = data;
 
+        // Determinar rol del usuario actual
+        const uid = this.auth.getUserId();
+        const participante = data.participantes?.find((p: any) => {
+          const puid = p.usuario_id?._id || p.usuario_id;
+          return puid === uid;
+        });
+        if (participante) {
+          this.currentUserRole = participante.permiso || 'lector';
+        }
+
         // Actualizar el posit del panel de comentarios si está abierto
         if (this.positComentarios && this.positComentarios.posit_id) {
           const updatedPosit = data.posits.find((p: any) => p.posit_id === this.positComentarios.posit_id);
@@ -211,6 +222,15 @@ export class Mural implements OnInit, OnDestroy {
         this.cd.detectChanges();
       }
     });
+  }
+
+  // --- Helpers de Permisos ---
+  canEdit(): boolean {
+    return this.currentUserRole === 'admin' || this.currentUserRole === 'editor';
+  }
+
+  isAdmin(): boolean {
+    return this.currentUserRole === 'admin';
   }
 
   // --- EVENTOS DRAG LOCALES ---
@@ -254,10 +274,23 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   // --- Métodos Auxiliares ---
-  async invitar(emailManual?: string) {
-    const email = emailManual || await this.notify.prompt("✉️ Email:");
+  async invitar(data?: any) {
+    let email: string | null = null;
+    let permiso: string = 'lector';
+
+    if (data && typeof data === 'object') {
+      email = data.email;
+      permiso = data.permiso;
+    } else {
+      email = data || await this.notify.prompt("✉️ Email:");
+    }
+
     if (email && this.id) {
-      this.api.inviteUser(this.id, email).subscribe(() => this.cargar());
+      if (!this.isAdmin()) {
+        this.notify.error("No tienes permisos para invitar usuarios");
+        return;
+      }
+      this.api.inviteUser(this.id, email, permiso).subscribe(() => this.cargar());
     }
   }
 

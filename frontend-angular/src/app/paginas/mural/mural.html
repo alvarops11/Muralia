@@ -50,8 +50,9 @@
 
 <!-- Modal de Compartir -->
 <div *ngIf="mostrarCompartir" class="modal-overlay-mural" (click)="cerrarCompartir()">
-    <app-compartir [boardId]="board?._id" [participantes]="board?.participantes || []" (onInvite)="invitar($event)"
-        (onRemove)="echarlo($event)" (onClose)="cerrarCompartir()" (click)="$event.stopPropagation()"
+    <app-compartir [boardId]="board?._id" [participantes]="board?.participantes || []" [userRole]="currentUserRole"
+        (onInvite)="invitar($event)" (onRemove)="echarlo($event)" (onClose)="cerrarCompartir()"
+        (click)="$event.stopPropagation()"
         style="width: 100%; max-width: 600px; display: flex; justify-content: center;"></app-compartir>
 </div>
 
@@ -107,8 +108,8 @@
         </div>
 
         <div class="top-actions">
-            <button class="btn-new-note-mural" (click)="crearPosit()">📝 Nueva Nota</button>
-            <button class="btn-invite-white" (click)="abrirCompartir()">📧 Invitar Equipo</button>
+            <button *ngIf="canEdit()" class="btn-new-note-mural" (click)="crearPosit()">📝 Nueva Nota</button>
+            <button *ngIf="isAdmin()" class="btn-invite-white" (click)="abrirCompartir()">📧 Invitar Equipo</button>
         </div>
 
         <div *ngIf="board" class="team-section">
@@ -120,7 +121,8 @@
                     <div class="member-name">{{ getMemberName(p.usuario_id) }}</div>
                     <div class="member-role">{{ p.permiso }}</div>
                 </div>
-                <span class="remove-icon" (click)="echarlo(p.usuario_id?._id || p.usuario_id)">×</span>
+                <span *ngIf="isAdmin()" class="remove-icon"
+                    (click)="echarlo(p.usuario_id?._id || p.usuario_id)">×</span>
             </div>
         </div>
 
@@ -154,16 +156,17 @@
 
             <div *ngFor="let posit of board.posits" class="note" [class.yellow]="posit.color === '#fef3c7'"
                 [style.background-color]="posit.color" cdkDrag cdkDragHandle [attr.data-posit-id]="posit.posit_id"
-                (cdkDragStarted)="alEmpezarDrag()" (cdkDragMoved)="alMoverDrag($event, posit)"
-                (cdkDragEnded)="alSoltarDrag(posit)" [class.being-moved-remote]="ghosts[posit.posit_id]">
+                [cdkDragDisabled]="!canEdit()" (cdkDragStarted)="alEmpezarDrag()"
+                (cdkDragMoved)="alMoverDrag($event, posit)" (cdkDragEnded)="alSoltarDrag(posit)"
+                [class.being-moved-remote]="ghosts[posit.posit_id]">
 
                 <div class="custom-placeholder" *cdkDragPlaceholder></div>
 
                 <div class="note-header">
-                    <span class="drag-handle">⋮⋮⋮</span>
+                    <span *ngIf="canEdit()" class="drag-handle">⋮⋮⋮</span>
                     <span class="order-tag">#{{ posit.posicion?.orden }}</span>
 
-                    <div class="header-actions">
+                    <div *ngIf="canEdit()" class="header-actions">
                         <span *ngIf="locks[posit.posit_id]" class="lock-icon"
                             [title]="'Editando: ' + locks[posit.posit_id]">🔒</span>
 

@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -43,6 +43,10 @@ import { AUTH_CONFIG } from '../../auth.config';
                     [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
             </div>
             
+            <div *ngIf="errorMessage" class="error-banner">
+                <i class="fas fa-exclamation-circle"></i> {{ errorMessage }}
+            </div>
+
             <button type="submit" class="btn btn-primary full-width" [disabled]="loginForm.invalid || isLoading">
                 <span *ngIf="!isLoading">Iniciar sesión</span>
                 <span *ngIf="isLoading">Cargando...</span>
@@ -113,6 +117,19 @@ import { AUTH_CONFIG } from '../../auth.config';
     
     .full-width { width: 100%; }
 
+    .error-banner {
+      background-color: #fef2f2;
+      border: 1px solid #fee2e2;
+      color: #b91c1c;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .login-footer {
       text-align: center;
       margin-top: 25px;
@@ -133,14 +150,21 @@ export class LoginComponent {
   private notify = inject(NotificationService);
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
   isLoading = false;
   loginForm: FormGroup;
+  errorMessage: string | null = null;
 
   constructor() {
     this.loginForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]],
       password: ['', [Validators.required, Validators.minLength(6)]]
+    });
+
+    // Reset error message when user modifies the form
+    this.loginForm.valueChanges.subscribe(() => {
+      this.errorMessage = null;
     });
   }
 
@@ -165,7 +189,8 @@ export class LoginComponent {
       },
       error: (err) => {
         this.isLoading = false;
-        this.notify.error(err.error?.message || 'Error al iniciar sesión');
+        this.errorMessage = err.error?.message || 'Email o contraseña incorrectos';
+        this.cdr.detectChanges();
       }
     });
   }

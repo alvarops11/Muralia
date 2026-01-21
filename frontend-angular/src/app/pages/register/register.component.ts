@@ -1,4 +1,4 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -54,6 +54,10 @@ import { NotificationService } from '../../services/notification.service';
                 </select>
             </div>
             
+            <div *ngIf="errorMessage" class="error-banner">
+                <i class="fas fa-exclamation-circle"></i> {{ errorMessage }}
+            </div>
+
             <button type="submit" class="btn btn-primary full-width" [disabled]="registerForm.invalid || isLoading">
                 <span *ngIf="!isLoading">Crear Cuenta</span>
                 <span *ngIf="isLoading">Procesando...</span>
@@ -125,6 +129,19 @@ import { NotificationService } from '../../services/notification.service';
     
     .full-width { width: 100%; }
 
+    .error-banner {
+      background-color: #fef2f2;
+      border: 1px solid #fee2e2;
+      color: #b91c1c;
+      padding: 12px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .login-footer {
       text-align: center;
       margin-top: 25px;
@@ -141,9 +158,11 @@ export class RegisterComponent {
   private notify = inject(NotificationService);
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
+  private cdr = inject(ChangeDetectorRef);
 
   isLoading = false;
   registerForm: FormGroup;
+  errorMessage: string | null = null;
 
   constructor() {
     this.registerForm = this.fb.group({
@@ -152,6 +171,11 @@ export class RegisterComponent {
       confirmPassword: ['', [Validators.required]],
       rol: ['Alumno', [Validators.required]]
     }, { validators: this.passwordMatchValidator });
+
+    // Reset error message when user modifies the form
+    this.registerForm.valueChanges.subscribe(() => {
+      this.errorMessage = null;
+    });
   }
 
   passwordMatchValidator(g: FormGroup) {
@@ -216,7 +240,8 @@ export class RegisterComponent {
         }
 
         console.log('Error extraído:', errorMsg);
-        this.notify.error(errorMsg);
+        this.errorMessage = errorMsg;
+        this.cdr.detectChanges();
       }
     });
   }

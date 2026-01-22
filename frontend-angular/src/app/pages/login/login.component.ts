@@ -1,6 +1,6 @@
 import { Component, inject, ChangeDetectorRef } from '@angular/core';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
+import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AuthService } from '../../services/auth.service';
 import { NotificationService } from '../../services/notification.service';
@@ -147,6 +147,7 @@ export class LoginComponent {
   token = '';
 
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
   private notify = inject(NotificationService);
   private authService = inject(AuthService);
   private fb = inject(FormBuilder);
@@ -172,7 +173,8 @@ export class LoginComponent {
     if (this.token.trim()) {
       localStorage.setItem('jwt_token', this.token.trim());
       localStorage.removeItem('auth_user'); // Limpiar datos de sesión previos
-      this.router.navigate(['/boards']);
+      const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/boards';
+      this.router.navigateByUrl(returnUrl);
     } else {
       this.notify.warning("Por favor, pega un token válido");
     }
@@ -185,7 +187,8 @@ export class LoginComponent {
     this.authService.login(this.loginForm.value).subscribe({
       next: () => {
         this.isLoading = false;
-        this.router.navigate(['/boards']);
+        const returnUrl = this.route.snapshot.queryParamMap.get('returnUrl') || '/boards';
+        this.router.navigateByUrl(returnUrl);
       },
       error: (err) => {
         this.isLoading = false;

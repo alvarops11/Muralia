@@ -42,32 +42,44 @@ export class Mural implements OnInit, OnDestroy {
   getMemberName(u: any): string {
     if (!u) return 'Anónimo';
 
+    let rawIdentifier = '';
+
     // 1. Si es un POST-IT { posit_id, autor_id, nombre_autor... }
     if (typeof u === 'object' && u.posit_id) {
-      if (u.nombre_autor) return u.nombre_autor;
-      u = u.autor_id; // Pasamos a analizar el autor_id
+      if (u.nombre_autor) rawIdentifier = u.nombre_autor;
+      else u = u.autor_id;
     }
 
     // 2. Si es un objeto de PARTICIPANTE { usuario_id, nombre?, permiso..., guest_id? }
-    if (typeof u === 'object' && (u.usuario_id !== undefined || u.guest_id !== undefined)) {
-      if (u.nombre) return u.nombre;
-      if (u.guest_id) return 'Invitado';
-      u = u.usuario_id; // Pasamos a analizar el usuario_id
+    if (!rawIdentifier && typeof u === 'object' && (u.usuario_id !== undefined || u.guest_id !== undefined)) {
+      if (u.nombre) rawIdentifier = u.nombre;
+      else if (u.guest_id) return 'Invitado';
+      else u = u.usuario_id;
     }
 
     // 3. Si u es el objeto de USUARIO populado { _id, email, nombre? }
-    if (typeof u === 'object') {
-      if (u.nombre) return u.nombre;
-      if (u.email) return u.email.split('@')[0];
-      let id = u._id || '';
-      return (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
+    if (!rawIdentifier && typeof u === 'object') {
+      if (u.nombre) rawIdentifier = u.nombre;
+      else if (u.email) rawIdentifier = u.email;
+      else {
+        let id = u._id || '';
+        rawIdentifier = (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
+      }
     }
 
     // 4. Si u es un string directo (ID o Email)
-    const str = u + '';
-    if (str.includes('@')) return str.split('@')[0];
-    if (str.startsWith('guest_')) return 'Invitado';
-    return str.replace('usuario_', '').slice(0, 10);
+    if (!rawIdentifier) {
+      rawIdentifier = u + '';
+    }
+
+    // --- LÓGICA DE FORMATEO FINAL ---
+    if (rawIdentifier.includes('@')) {
+      return rawIdentifier.split('@')[0];
+    }
+
+    if (rawIdentifier.startsWith('guest_')) return 'Invitado';
+
+    return rawIdentifier.replace('usuario_', '').slice(0, 10);
   }
 
   // Modal state
@@ -196,30 +208,51 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   verificarInvitacion() {
+    // 1. Verificar si ya tenemos los parámetros en el snapshot (útil para llamadas directas tras 403)
+    const snapshotParams = this.route.snapshot.queryParamMap;
+    const invite = snapshotParams.get('invite');
+    const role = snapshotParams.get('role');
+
+    if (invite === 'true' && role && this.id) {
+      this.procesarInvitacion(invite, role);
+      return;
+    }
+
+    // 2. Suscribirse por si cambian los parámetros (ya existía)
     this.subs.push(
       this.route.queryParamMap.subscribe(params => {
-        const invite = params.get('invite');
-        const role = params.get('role');
-
-        if (invite === 'true' && role && this.id) {
-          this.api.joinBoard(this.id, role).subscribe({
-            next: () => {
-              this.notify.success(`¡Bienvenido! Te has unido como ${role}`);
-              this.router.navigate([], {
-                queryParams: { invite: null, role: null },
-                queryParamsHandling: 'merge',
-                replaceUrl: true
-              });
-              this.cargar(true);
-            },
-            error: (err) => {
-              console.error('Error al unirse via link:', err);
-              this.cargar(true);
-            }
-          });
+        const inv = params.get('invite');
+        const rol = params.get('role');
+        if (inv === 'true' && rol && this.id) {
+          this.procesarInvitacion(inv, rol);
         }
       })
     );
+  }
+
+  private procesarInvitacion(invite: string, role: string) {
+    if (!this.id || this.guardandoInvitado) return;
+    this.guardandoInvitado = true; // Reutilizamos flag para evitar dobles uniones
+
+    this.api.joinBoard(this.id, role).subscribe({
+      next: () => {
+        this.guardandoInvitado = false;
+        this.notify.success(`¡Bienvenido! Te has unido como ${role}`);
+        // Limpiar parámetros de la URL
+        this.router.navigate([], {
+          queryParams: { invite: null, role: null },
+          queryParamsHandling: 'merge',
+          replaceUrl: true
+        });
+        this.cargar(true); // Recargar datos del tablero ahora que somos participantes
+      },
+      error: (err) => {
+        this.guardandoInvitado = false;
+        console.error('Error al unirse via link:', err);
+        // Si falló, intentar cargar de todas formas (mostrará error si sigue siendo 403)
+        this.cargar(true);
+      }
+    });
   }
 
   ngOnDestroy() {
@@ -240,14 +273,14 @@ export class Mural implements OnInit, OnDestroy {
       this.cd.detectChanges();
     }
 
-    this.api.getBoard(this.id).subscribe({
+    const guestData = this.getGuestData();
+    this.api.getBoard(this.id, guestData?.guestId).subscribe({
       next: (data) => {
         data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
         this.board = data;
         this.error = '';
 
         const uid = this.auth.getUserId();
-        const guestData = this.getGuestData();
 
         // 1. Verificar si ya soy participante con cuenta real
         let participante = data.participantes?.find((p: any) => {
@@ -282,8 +315,8 @@ export class Mural implements OnInit, OnDestroy {
           }
         } else {
           console.log('[Mural] Usuario no es participante aún.');
-          // No soy participante.
-          // Si el tablero es 'enlace-abierto', iniciamos onboarding de invitado
+
+          // Caso: Board de acceso abierto
           if (data.privacidad === 'enlace-abierto') {
             if (guestData) {
               console.log('[Mural] Tengo guestData, intentando auto-unirse...');
@@ -294,9 +327,16 @@ export class Mural implements OnInit, OnDestroy {
               this.cargando = false;
             }
           } else {
-            console.log('[Mural] No es enlace-abierto, intentando verificar invitación...');
-            this.verificarInvitacion();
-            // Si no es abierto, debemos parar el loading
+            // Caso: Board privado/cerrado -> Priorizar Login si no estoy dentro
+            const params = this.route.snapshot.queryParamMap;
+            if (!this.auth.getUserId()) {
+              console.log('[Mural] Board privado y no logeado. Redirigiendo al login...');
+              this.notify.info("Este tablero es privado. Por favor, inicia sesión.");
+              this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+            } else {
+              console.log('[Mural] Estoy logeado pero no soy participante. Verificando invitacion...');
+              this.verificarInvitacion();
+            }
             this.cargando = false;
           }
         }
@@ -314,6 +354,26 @@ export class Mural implements OnInit, OnDestroy {
       error: (err) => {
         this.cargando = false;
         if (!silent) {
+          // Si es un 403 (Prohibido)
+          if (err.status === 403) {
+            const params = this.route.snapshot.queryParamMap;
+            const isInvite = params.get('invite') === 'true' && params.get('role');
+
+            // Si no estamos logeados, SIEMPRE redirigir al login para tableros prohibidos
+            if (!this.auth.getUserId()) {
+              console.log('[Mural] 403 Prohibido. Redirigiendo al login...');
+              this.notify.info("Este tablero es privado. Por favor, inicia sesión.");
+              this.router.navigate(['/login'], { queryParams: { returnUrl: this.router.url } });
+              return;
+            }
+
+            // Si estamos logeados pero dio 403, intentar procesar invitación si la hay
+            if (isInvite) {
+              console.log('[Mural] 403 detectado estando logeado, intentando unirse...');
+              this.verificarInvitacion();
+              return;
+            }
+          }
           this.error = "Error cargando";
         }
         this.cd.detectChanges();

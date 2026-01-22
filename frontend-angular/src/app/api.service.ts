@@ -10,7 +10,10 @@ export class ApiService {
 
   // --- TABLEROS ---
   getBoards() { return this.http.get<any[]>(this.apiUrl); }
-  getBoard(id: string) { return this.http.get<any>(`${this.apiUrl}/${id}`); }
+  getBoard(id: string, guestId?: string | null) {
+    const url = guestId ? `${this.apiUrl}/${id}?guestId=${guestId}` : `${this.apiUrl}/${id}`;
+    return this.http.get<any>(url);
+  }
   joinBoard(id: string, role: string, guestData?: { nombre: string, guestId: string }) {
     return this.http.post(`${this.apiUrl}/${id}/join`, { role, ...guestData });
   }

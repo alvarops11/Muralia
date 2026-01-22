@@ -289,8 +289,17 @@ export const getBoardById = async (req: Request, res: Response) => {
 
     // Seguridad: Si es privado, solo participantes. Si es enlace-abierto o publico, cualquiera.
     const isParticipant = board.participantes.some(p => {
-      const puid = (p.usuario_id as any)?._id || p.usuario_id;
-      return user && puid.toString() === user._id.toString();
+      // 1. Caso Usuario Registrado
+      if (user) {
+        const puid = (p.usuario_id as any)?._id || p.usuario_id;
+        if (puid && puid.toString() === user._id.toString()) return true;
+      }
+
+      // 2. Caso Invitado (Guest)
+      const guestId_req = req.query.guestId;
+      if (guestId_req && p.guest_id === guestId_req) return true;
+
+      return false;
     });
 
     if (board.privacidad === 'privado' && !isParticipant) {
@@ -739,14 +748,24 @@ export const joinBoardViaLink = async (req: Request, res: Response) => {
     const finalRole = role === 'editor' ? 'editor' : 'lector';
 
     if (pIndex !== -1) {
-      // YA EXISTE: Actualizamos nombre y rol
-      board.participantes[pIndex].nombre = userName_final;
-      board.participantes[pIndex].permiso = finalRole;
-      if (guestId_req) board.participantes[pIndex].guest_id = guestId_req;
+      // YA EXISTE:
+      const existingParticipant = board.participantes[pIndex];
 
-      board.markModified('participantes'); // Obligamos a Mongoose a detectar el cambio en el sub-array
+      // Proteccion contra downgrade: no bajar de admin a editor/lector, ni de editor a lector
+      const rolesOrder = { 'admin': 3, 'editor': 2, 'lector': 1 };
+      const currentRoleWeight = rolesOrder[existingParticipant.permiso as keyof typeof rolesOrder] || 0;
+      const newRoleWeight = rolesOrder[finalRole as keyof typeof rolesOrder] || 0;
+
+      if (newRoleWeight > currentRoleWeight) {
+        existingParticipant.permiso = finalRole;
+      }
+
+      existingParticipant.nombre = userName_final;
+      if (guestId_req) existingParticipant.guest_id = guestId_req;
+
+      board.markModified('participantes');
       await board.save();
-      console.log(`[joinBoard] Datos actualizados para: ${userName_final} (${finalRole})`);
+      console.log(`[joinBoard] Datos actualizados para: ${userName_final} (${existingParticipant.permiso})`);
       emitirActualizacion(req, boardId, 'userJoined');
       return res.json({ message: 'Datos de colaborador actualizados', board });
     }

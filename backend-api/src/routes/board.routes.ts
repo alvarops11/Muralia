@@ -22,19 +22,19 @@ router.delete('/:boardId', validateToken, deleteBoard);
 router.post('/:boardId/join', optionalAuth, joinBoardViaLink);
 
 // --- POSITS ---
-router.post('/:boardId/posits', addPosit);
-router.put('/:boardId/posits/:positId', updatePosit);
-router.delete('/:boardId/posits/:positId', deletePosit);
-router.post('/:boardId/posits/:positId/upload', upload.single('archivo'), uploadFileToPosit); // <--- NUEVO
-router.delete('/:boardId/posits/:positId/file', deleteFileFromPosit); // <--- NUEVO
+router.post('/:boardId/posits', optionalAuth, addPosit);
+router.put('/:boardId/posits/:positId', optionalAuth, updatePosit);
+router.delete('/:boardId/posits/:positId', optionalAuth, deletePosit);
+router.post('/:boardId/posits/:positId/upload', optionalAuth, upload.single('archivo'), uploadFileToPosit); // <--- NUEVO
+router.delete('/:boardId/posits/:positId/file', optionalAuth, deleteFileFromPosit); // <--- NUEVO
 
 // --- COMENTARIOS ---
-router.post('/:boardId/posits/:positId/comments', addComment);
-router.delete('/:boardId/posits/:positId/comments/:commentId', deleteComment); // <--- NUEVO (Borrar comentario)
+router.post('/:boardId/posits/:positId/comments', optionalAuth, addComment);
+router.delete('/:boardId/posits/:positId/comments/:commentId', optionalAuth, deleteComment); // <--- NUEVO (Borrar comentario)
 
 // --- PARTICIPANTES ---
-router.post('/:boardId/participants', inviteUser);
-router.put('/:boardId/participants/:userId', updateParticipantRole); // <--- NUEVO (Cambiar rol)
-router.delete('/:boardId/participants/:userIdToRemove', removeParticipant); // <--- NUEVO (Expulsar/Salir)
+router.post('/:boardId/participants', validateToken, inviteUser);
+router.put('/:boardId/participants/:userId', validateToken, updateParticipantRole); // <--- NUEVO (Cambiar rol)
+router.delete('/:boardId/participants/:userIdToRemove', validateToken, removeParticipant); // <--- NUEVO (Expulsar/Salir)
 
 export default router;

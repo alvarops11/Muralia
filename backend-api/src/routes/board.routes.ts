@@ -6,8 +6,11 @@ import {
   addComment, deleteComment, // <--- NUEVO
   inviteUser, removeParticipant, // <--- NUEVO
   uploadFileToPosit, deleteFileFromPosit, // <--- NUEVO
-  joinBoardViaLink, // <--- NUEVO
-  updateParticipantRole // <--- NUEVO
+  joinBoardViaLink,
+  updateParticipantRole,
+  getMyInvitations,
+  acceptInvitation,
+  declineInvitation
 } from '../controllers/board.controller';
 import { validateToken, optionalAuth } from '../middlewares/auth.middleware';
 import { upload } from '../middlewares/upload.middleware';
@@ -36,5 +39,10 @@ router.delete('/:boardId/posits/:positId/comments/:commentId', optionalAuth, del
 router.post('/:boardId/participants', validateToken, inviteUser);
 router.put('/:boardId/participants/:userId', validateToken, updateParticipantRole); // <--- NUEVO (Cambiar rol)
 router.delete('/:boardId/participants/:userIdToRemove', validateToken, removeParticipant); // <--- NUEVO (Expulsar/Salir)
+
+// --- INVITACIONES ---
+router.get('/invitations/me', validateToken, getMyInvitations);
+router.post('/invitations/:invitationId/accept', validateToken, acceptInvitation);
+router.post('/invitations/:invitationId/decline', validateToken, declineInvitation);
 
 export default router;

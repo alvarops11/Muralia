@@ -55,4 +55,15 @@ export class ApiService {
   updateParticipantRole(boardId: string, userId: string, role: string) {
     return this.http.put(`${this.apiUrl}/${boardId}/participants/${userId}`, { role });
   }
+
+  // --- INVITACIONES (NUEVO) ---
+  getInvitations() {
+    return this.http.get<any[]>(`${this.apiUrl}/invitations/me`);
+  }
+  acceptInvitation(invitationId: string) {
+    return this.http.post(`${this.apiUrl}/invitations/${invitationId}/accept`, {});
+  }
+  declineInvitation(invitationId: string) {
+    return this.http.post(`${this.apiUrl}/invitations/${invitationId}/decline`, {});
+  }
 }

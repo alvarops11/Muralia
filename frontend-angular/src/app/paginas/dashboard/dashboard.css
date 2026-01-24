@@ -150,6 +150,7 @@ body {
         opacity: 0;
         transform: translateY(-10px);
     }
+
     to {
         opacity: 1;
         transform: translateY(0);
@@ -728,5 +729,103 @@ body {
 
 .btn-cancel:hover {
     background-color: #e2e8f0;
+    color: #2d3748;
+}
+
+/* --- INVITACIONES (NUEVO) --- */
+.invitations-section {
+    margin-bottom: 40px;
+    animation: fadeIn 0.6s ease;
+}
+
+.section-title {
+    font-size: 14px;
+    font-weight: 800;
+    color: #4a5568;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: linear-gradient(90deg, #e2e8f0, transparent);
+}
+
+.invitations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 16px;
+}
+
+.invitation-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    border: 1px solid rgba(108, 92, 231, 0.1);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+    transition: all 0.3s ease;
+}
+
+.invitation-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 20px rgba(108, 92, 231, 0.08);
+    border-color: rgba(108, 92, 231, 0.3);
+}
+
+.invite-board-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #2d3748;
+    margin-bottom: 4px;
+}
+
+.invite-sender {
+    font-size: 13px;
+    color: #718096;
+}
+
+.invite-actions {
+    display: flex;
+    gap: 10px;
+}
+
+.btn-invite {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-invite.accept {
+    background: #5570f1;
+    color: white;
+}
+
+.btn-invite.accept:hover {
+    background: #4560e0;
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.3);
+}
+
+.btn-invite.decline {
+    background: #f7fafc;
+    color: #718096;
+    border: 1px solid #e2e8f0;
+}
+
+.btn-invite.decline:hover {
+    background: #edf2f7;
     color: #2d3748;
 }

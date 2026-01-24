@@ -26,6 +26,23 @@
         <input type="text" class="search-input" placeholder="Buscar Murales..." [(ngModel)]="searchTerm">
     </div>
 
+    <!-- Invitations Section (NUEVO) -->
+    <div *ngIf="invitations.length > 0 && searchTerm === ''" class="invitations-section">
+        <h2 class="section-title">Invitaciones Pendientes ({{ invitations.length }})</h2>
+        <div class="invitations-grid">
+            <div *ngFor="let invite of invitations" class="invitation-card">
+                <div class="invite-info">
+                    <div class="invite-board-title">{{ invite.board_id?.titulo || 'Tablero sin título' }}</div>
+                    <div class="invite-sender">Invitado por: {{ invite.sender_id?.email }}</div>
+                </div>
+                <div class="invite-actions">
+                    <button class="btn-invite accept" (click)="acceptInvite(invite._id)">Aceptar</button>
+                    <button class="btn-invite decline" (click)="declineInvite(invite._id)">Rechazar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Loading state (Solo si no hay datos) -->
     <div *ngIf="loading && boards.length === 0" class="loading-state">
         <p>⏳ Cargando murales...</p>

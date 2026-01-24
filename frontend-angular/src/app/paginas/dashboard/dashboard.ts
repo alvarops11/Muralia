@@ -28,7 +28,9 @@ export class Dashboard implements OnInit {
   private notify = inject(NotificationService);
 
   boards: Board[] = [];
+  invitations: any[] = [];
   loading = true;
+  loadingInvites = false;
   error: string | null = null;
   searchTerm = '';
   userName = '';
@@ -58,6 +60,7 @@ export class Dashboard implements OnInit {
     this.userName = this.auth.getUserName();
     this.cdr.detectChanges();
     this.loadBoards();
+    this.loadInvitations();
   }
 
   loadBoards() {
@@ -77,6 +80,47 @@ export class Dashboard implements OnInit {
         this.error = 'Error al cargar los murales. Por favor, intenta de nuevo.';
         this.loading = false;
         this.cdr.detectChanges();
+      }
+    });
+  }
+
+  loadInvitations() {
+    this.loadingInvites = true;
+    this.api.getInvitations().subscribe({
+      next: (data) => {
+        this.invitations = data;
+        this.loadingInvites = false;
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        console.error('Error loading invitations:', err);
+        this.loadingInvites = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  acceptInvite(id: string) {
+    this.api.acceptInvitation(id).subscribe({
+      next: () => {
+        this.notify.success('¡Invitación aceptada!');
+        this.loadInvitations();
+        this.loadBoards();
+      },
+      error: (err) => {
+        this.notify.error('Error al aceptar la invitación');
+      }
+    });
+  }
+
+  declineInvite(id: string) {
+    this.api.declineInvitation(id).subscribe({
+      next: () => {
+        this.notify.success('Invitación rechazada');
+        this.loadInvitations();
+      },
+      error: (err) => {
+        this.notify.error('Error al rechazar la invitación');
       }
     });
   }

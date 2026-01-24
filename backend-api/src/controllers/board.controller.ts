@@ -15,6 +15,7 @@ import {
   updateBoardSchema,
   addCommentSchema
 } from '../types/validator';
+import Invitation from '../models/Invitation';
 
 // --- HELPER PARA SOCKETS (NUEVO) ---
 // Función auxiliar para no repetir código. Emite el evento a la sala del tablero.
@@ -356,7 +357,7 @@ export const deletePosit = async (req: Request, res: Response) => {
   }
 };
 
-// 5. Invitar usuario
+// 5. Invitar usuario (Ahora crea una invitación formal)
 export const inviteUser = async (req: Request, res: Response) => {
   const { boardId } = req.params;
   const user = req.currentUser!; // Tú
@@ -371,19 +372,94 @@ export const inviteUser = async (req: Request, res: Response) => {
       return res.status(404).json({ error: 'El usuario no está registrado en la App' });
     }
 
-    // 3. Añadir al tablero CON SEGURIDAD
-    const board = await Board.findOneAndUpdate(
-      {
-        _id: boardId,
-        participantes: {
-          $elemMatch: { usuario_id: user._id, permiso: 'admin' }
-        }
-      },
+    if (targetUser._id === user._id) {
+      return res.status(400).json({ error: 'No puedes invitarte a ti mismo' });
+    }
+
+    // 3. Verificar si ya es participante
+    const board = await Board.findById(boardId);
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+
+    const isAlreadyParticipant = board.participantes.some(p => {
+      const puid = (p.usuario_id as any)?._id || p.usuario_id;
+      return puid && puid.toString() === targetUser._id.toString();
+    });
+
+    if (isAlreadyParticipant) {
+      return res.status(400).json({ error: 'El usuario ya es participante de este tablero' });
+    }
+
+    // 4. Verificar si ya tiene una invitación pendiente
+    const existingInvite = await Invitation.findOne({
+      board_id: boardId,
+      receiver_id: targetUser._id,
+      status: 'pending'
+    });
+
+    if (existingInvite) {
+      return res.status(400).json({ error: 'Ya existe una invitación pendiente para este usuario' });
+    }
+
+    // 5. Crear la invitación
+    const newInvitation = new Invitation({
+      board_id: boardId,
+      sender_id: user._id,
+      receiver_id: targetUser._id,
+      permiso,
+      status: 'pending'
+    });
+
+    await newInvitation.save();
+
+    res.json({
+      message: `Invitación enviada a ${email} correctamente`,
+      invitation: newInvitation
+    });
+
+  } catch (error: any) {
+    if (error.name === 'ZodError') return res.status(400).json({ error: error.errors });
+    console.error('[inviteUser] Error:', error);
+    res.status(500).json({ error: 'Error invitando usuario' });
+  }
+};
+
+// 15. Obtener invitaciones pendientes del usuario (NUEVO)
+export const getMyInvitations = async (req: Request, res: Response) => {
+  try {
+    const user = req.currentUser!;
+    const invitations = await Invitation.find({
+      receiver_id: user._id,
+      status: 'pending'
+    }).populate('board_id', 'titulo').populate('sender_id', 'email');
+
+    res.json(invitations);
+  } catch (error) {
+    res.status(500).json({ error: 'Error obteniendo invitaciones' });
+  }
+};
+
+// 16. Aceptar invitación (NUEVO)
+export const acceptInvitation = async (req: Request, res: Response) => {
+  const { invitationId } = req.params;
+  const user = req.currentUser!;
+
+  try {
+    const invite = await Invitation.findOne({
+      _id: invitationId,
+      receiver_id: user._id,
+      status: 'pending'
+    });
+
+    if (!invite) return res.status(404).json({ error: 'Invitación no encontrada' });
+
+    // Añadir al tablero
+    const board = await Board.findByIdAndUpdate(
+      invite.board_id,
       {
         $addToSet: {
           participantes: {
-            usuario_id: targetUser._id,
-            permiso: permiso,
+            usuario_id: user._id,
+            permiso: invite.permiso,
             fecha_incorporacion: new Date()
           }
         }
@@ -391,23 +467,35 @@ export const inviteUser = async (req: Request, res: Response) => {
       { new: true }
     );
 
-    if (!board) {
-      return res.status(403).json({
-        error: 'No tienes permisos de Admin en este tablero o el tablero no existe'
-      });
-    }
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
 
-    // 🔥 SOCKET
-    emitirActualizacion(req, boardId, 'inviteUser');
+    // Marcar invitación como aceptada
+    invite.status = 'accepted';
+    await invite.save();
 
-    res.json({
-      message: `Usuario ${email} invitado correctamente`,
-      participantes: board.participantes
-    });
+    res.json({ message: 'Invitación aceptada', board });
+  } catch (error) {
+    res.status(500).json({ error: 'Error aceptando invitación' });
+  }
+};
 
-  } catch (error: any) {
-    if (error.name === 'ZodError') return res.status(400).json({ error: error.errors });
-    res.status(500).json({ error: 'Error invitando usuario' });
+// 17. Rechazar invitación (NUEVO)
+export const declineInvitation = async (req: Request, res: Response) => {
+  const { invitationId } = req.params;
+  const user = req.currentUser!;
+
+  try {
+    const invite = await Invitation.findOneAndUpdate(
+      { _id: invitationId, receiver_id: user._id, status: 'pending' },
+      { $set: { status: 'declined' } },
+      { new: true }
+    );
+
+    if (!invite) return res.status(404).json({ error: 'Invitación no encontrada' });
+
+    res.json({ message: 'Invitación rechazada' });
+  } catch (error) {
+    res.status(500).json({ error: 'Error rechazando invitación' });
   }
 };
 

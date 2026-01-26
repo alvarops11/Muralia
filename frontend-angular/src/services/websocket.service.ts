@@ -84,4 +84,11 @@ export class WebsocketService {
       return () => this.socket.off('posit_desbloqueado');
     });
   }
+
+  onLockSync(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('estado_bloqueos', (data) => subscriber.next(data));
+      return () => this.socket.off('estado_bloqueos');
+    });
+  }
 }

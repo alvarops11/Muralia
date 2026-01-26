@@ -200,6 +200,14 @@ export class Mural implements OnInit, OnDestroy {
         this.cd.detectChanges();
       })
     );
+
+    this.subs.push(
+      this.wsService.onLockSync().subscribe((data: any) => {
+        // data = { positId: usuario, ... }
+        this.locks = { ...this.locks, ...data };
+        this.cd.detectChanges();
+      })
+    );
   }
 
   verificarInvitacion() {

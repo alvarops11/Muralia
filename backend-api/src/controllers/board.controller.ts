@@ -515,12 +515,13 @@ export const addComment = async (req: Request, res: Response) => {
     if (user) {
       boardQuery['participantes.usuario_id'] = user._id;
       commentAuthorId = user._id;
+      commentAuthorName = user.email; // Guardamos el email como nombre por defecto
     } else {
       const { guestId, nombre } = req.body;
       if (!guestId) return res.status(400).json({ error: 'Falta guestId' });
       boardQuery['participantes.guest_id'] = guestId;
       commentAuthorId = guestId;
-      commentAuthorName = nombre;
+      commentAuthorName = nombre || 'Invitado';
     }
 
     const board = await Board.findOneAndUpdate(
@@ -637,7 +638,14 @@ export const removeParticipant = async (req: Request, res: Response) => {
         participantes: { $elemMatch: { usuario_id: user._id, permiso: 'admin' } }
       },
       {
-        $pull: { participantes: { usuario_id: userIdToRemove } }
+        $pull: {
+          participantes: {
+            $or: [
+              { usuario_id: userIdToRemove },
+              { guest_id: userIdToRemove }
+            ]
+          }
+        }
       },
       { new: true }
     );
@@ -901,8 +909,20 @@ export const updateParticipantRole = async (req: Request, res: Response) => {
     if (!board) return res.status(403).json({ error: 'No tienes permisos de administrador' });
 
     // 2. Actualizar el rol del participante específico
+    // 2. Actualizar el rol del participante específico
+    // Buscamos por usuario_id O guest_id
     const updatedBoard = await Board.findOneAndUpdate(
-      { _id: boardId, "participantes.usuario_id": userId },
+      {
+        _id: boardId,
+        participantes: {
+          $elemMatch: {
+            $or: [
+              { usuario_id: userId },
+              { guest_id: userId }
+            ]
+          }
+        }
+      },
       { $set: { "participantes.$.permiso": role } },
       { new: true }
     );

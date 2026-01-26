@@ -50,17 +50,18 @@
                 <div *ngFor="let p of participantes" class="user-item">
                     <span class="user-avatar">👤</span>
                     <div class="user-info">
-                        <span class="user-email">{{ getMemberName(p.usuario_id) }}</span>
+                        <span class="user-email">{{ getMemberName(p) }}</span>
                         <!-- Dropdown de rol solo si soy Admin -->
                         <select *ngIf="userRole === 'admin'" class="user-role-select" [ngModel]="p.permiso"
-                            (ngModelChange)="onRoleChange.emit({ userId: p.usuario_id?._id || p.usuario_id, role: $event })">
+                            (ngModelChange)="onRoleChange.emit({ userId: p.usuario_id?._id || p.usuario_id || p.guest_id, role: $event })">
                             <option value="lector">lector</option>
                             <option value="editor">editor</option>
                             <option value="admin">admin</option>
                         </select>
                         <span *ngIf="userRole !== 'admin'" class="user-role">{{ p.permiso }}</span>
                     </div>
-                    <span class="remove-user-btn" (click)="remove(p.usuario_id?._id || p.usuario_id)">×</span>
+                    <span class="remove-user-btn"
+                        (click)="remove(p.usuario_id?._id || p.usuario_id || p.guest_id)">×</span>
                 </div>
 
             </div>

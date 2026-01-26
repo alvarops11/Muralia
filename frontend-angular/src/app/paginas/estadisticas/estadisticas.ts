@@ -30,18 +30,76 @@ export class Estadisticas {
 
   getMemberName(u: any): string {
     if (!u) return 'Anónimo';
-    // Si es un objeto populado { _id, email, nombre? }
-    if (typeof u === 'object') {
-      if (u.nombre) return u.nombre;
-      if (u.email) return u.email.split('@')[0];
-      // Si solo tiene ID, limpiamos el prefijo 'usuario_' si existe
-      let id = u._id || '';
-      return (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
+
+    // 1. Si es un string (Email o ID directo)
+    if (typeof u === 'string') {
+      const str = u.trim();
+      if (str.includes('@')) return str.split('@')[0];
+      if (str.startsWith('guest_')) return 'Invitado';
+      return str.replace('usuario_', '').slice(0, 12);
     }
-    // Si es un string (ID o Email)
-    const str = u + '';
-    if (str.includes('@')) return str.split('@')[0];
-    return str.replace('usuario_', '').slice(0, 10);
+
+    // 2. Si es un objeto (Mural, Posit, Comentario, Participante o Usuario)
+    if (typeof u === 'object') {
+      // Prioridad 1: Nombramientos directos guardados
+      if (u.nombre) return u.nombre;
+      if (u.nombre_autor) return u.nombre_autor;
+
+      // Prioridad 2: Usuario poblado (email)
+      if (u.email) return u.email.split('@')[0];
+
+      // Prioridad 3: Seguir rastro de IDs (autor_id o usuario_id)
+      const subId = u.autor_id || u.usuario_id;
+      if (subId && subId !== u) {
+        return this.getMemberName(subId);
+      }
+
+      // Prioridad 4: Guest ID
+      if (u.guest_id) return 'Invitado';
+
+      // Fallback: ID del propio objeto
+      const objId = u._id || u.posit_id;
+      if (objId) return (objId + '').replace('usuario_', '').slice(0, 12);
+    }
+
+    return 'Anónimo';
+  }
+
+  // Helper para normalizar IDs (quitar prefijos, espacios, etc)
+  private cleanId(id: any): string {
+    if (!id) return '';
+    const str = String(id).trim();
+    // Quitar prefijo 'usuario_' si existe, para unificar criterios
+    return str.replace(/^usuario_/, '');
+  }
+
+  // Helper para identificar usuarios de forma única (ID, Email o GuestID)
+  private getUserKey(u: any): string {
+    if (!u) return 'unknown';
+
+    if (typeof u === 'string') return this.cleanId(u);
+
+    if (typeof u === 'object') {
+      // 1. Prioridad: Detectar Wrappers (Participantes)
+      // Si tiene usuario_id, es un wrapper de participante. Usamos el ID del usuario real.
+      if (u.usuario_id) {
+        const uid = typeof u.usuario_id === 'object' ? u.usuario_id._id : u.usuario_id;
+        return this.cleanId(uid);
+      }
+
+      // Si tiene guest_id directamente (Participante invitado)
+      if (u.guest_id) return this.cleanId(u.guest_id);
+
+      // 2. Objeto Usuario / Documento Genérico con _id
+      // Solo accedemos a _id si no es un wrapper con usuario_id
+      if (u._id) return this.cleanId(u._id);
+
+      // 3. Fallbacks de nombre
+      if (u.nombre) return 'name_' + u.nombre;
+      if (u.nombre_autor) return 'name_' + u.nombre_autor;
+    }
+
+    return 'unknown';
   }
 
   get statsByUser() {
@@ -51,11 +109,10 @@ export class Estadisticas {
 
     // 1. Inicializar mapa con participantes conocidos
     this.board.participantes?.forEach((p: any) => {
-      const u = p.usuario_id;
-      const uId = (typeof u === 'object' && u !== null) ? u._id : u;
+      const key = this.getUserKey(p);
 
-      userStatsMap.set(uId, {
-        name: this.getMemberName(u),
+      userStatsMap.set(key, {
+        name: this.getMemberName(p),
         role: p.permiso,
         postCount: 0,
         commentCount: 0
@@ -65,16 +122,29 @@ export class Estadisticas {
     // 2. Contar posts y comentarios por usuario
     this.board.posits?.forEach((p: any) => {
       // Contar posts por autor
-      const autor = p.autor_id;
-      if (autor) {
-        const autorId = (typeof autor === 'object' && autor !== null) ? autor._id : autor;
+      const autorObj = p.autor_id ? p.autor_id : { nombre: p.nombre_autor };
+      const autorKey = this.getUserKey(autorObj);
 
-        if (userStatsMap.has(autorId)) {
-          userStatsMap.get(autorId).postCount++;
-        } else {
-          // Alguien que no está en la lista de participantes
-          userStatsMap.set(autorId, {
-            name: this.getMemberName(autor),
+      if (userStatsMap.has(autorKey)) {
+        userStatsMap.get(autorKey).postCount++;
+      } else {
+        // Fallback: Buscar por nombre si no coincide la key (ej. ID vs Nombre)
+        const nameDisplay = this.getMemberName(p.autor_id || { nombre: p.nombre_autor });
+        let found = false;
+
+        // Iterar sobre los existentes para ver si coincide el nombre
+        for (const [key, val] of userStatsMap.entries()) {
+          if (val.name === nameDisplay) {
+            val.postCount++;
+            found = true;
+            break;
+          }
+        }
+
+        if (!found) {
+          // Alguien que no está en la lista de participantes o es invitado temporal
+          userStatsMap.set(autorKey, {
+            name: nameDisplay !== 'Anónimo' ? nameDisplay : 'Colaborador',
             role: 'Colaborador',
             postCount: 1,
             commentCount: 0
@@ -85,23 +155,31 @@ export class Estadisticas {
       // Contar comentarios por autor de comentario
       if (p.comentarios && p.comentarios.length > 0) {
         p.comentarios.forEach((c: any) => {
-          const comentarioAutor = c.usuario_id;
-          if (!comentarioAutor) return;
+          const comAutorKey = this.getUserKey(c.usuario_id || { nombre: c.nombre });
 
-          const comentarioAutorId = (typeof comentarioAutor === 'object' && comentarioAutor !== null) 
-            ? comentarioAutor._id 
-            : comentarioAutor;
-
-          if (userStatsMap.has(comentarioAutorId)) {
-            userStatsMap.get(comentarioAutorId).commentCount++;
+          if (userStatsMap.has(comAutorKey)) {
+            userStatsMap.get(comAutorKey).commentCount++;
           } else {
-            // Usuario que solo ha comentado pero no es participante
-            userStatsMap.set(comentarioAutorId, {
-              name: this.getMemberName(comentarioAutor),
-              role: 'Colaborador',
-              postCount: 0,
-              commentCount: 1
-            });
+            // Fallback: Buscar por nombre
+            const comNameDisplay = this.getMemberName(c.usuario_id || { nombre: c.nombre });
+            let foundCom = false;
+
+            for (const [key, val] of userStatsMap.entries()) {
+              if (val.name === comNameDisplay) {
+                val.commentCount++;
+                foundCom = true;
+                break;
+              }
+            }
+
+            if (!foundCom) {
+              userStatsMap.set(comAutorKey, {
+                name: comNameDisplay !== 'Anónimo' ? comNameDisplay : 'Colaborador',
+                role: 'Colaborador',
+                postCount: 0,
+                commentCount: 1
+              });
+            }
           }
         });
       }

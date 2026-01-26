@@ -42,44 +42,39 @@ export class Mural implements OnInit, OnDestroy {
   getMemberName(u: any): string {
     if (!u) return 'Anónimo';
 
-    let rawIdentifier = '';
-
-    // 1. Si es un POST-IT { posit_id, autor_id, nombre_autor... }
-    if (typeof u === 'object' && u.posit_id) {
-      if (u.nombre_autor) rawIdentifier = u.nombre_autor;
-      else u = u.autor_id;
+    // 1. Si es un string (Email o ID directo)
+    if (typeof u === 'string') {
+      const str = u.trim();
+      if (str.includes('@')) return str.split('@')[0];
+      if (str.startsWith('guest_')) return 'Invitado';
+      // Slicing moderado para IDs puros
+      return str.replace('usuario_', '').slice(0, 12);
     }
 
-    // 2. Si es un objeto de PARTICIPANTE { usuario_id, nombre?, permiso..., guest_id? }
-    if (!rawIdentifier && typeof u === 'object' && (u.usuario_id !== undefined || u.guest_id !== undefined)) {
-      if (u.nombre) rawIdentifier = u.nombre;
-      else if (u.guest_id) return 'Invitado';
-      else u = u.usuario_id;
-    }
+    // 2. Si es un objeto (Mural, Posit, Comentario, Participante o Usuario)
+    if (typeof u === 'object') {
+      // Prioridad 1: Nombramientos directos guardados
+      if (u.nombre) return u.nombre;
+      if (u.nombre_autor) return u.nombre_autor;
 
-    // 3. Si u es el objeto de USUARIO populado { _id, email, nombre? }
-    if (!rawIdentifier && typeof u === 'object') {
-      if (u.nombre) rawIdentifier = u.nombre;
-      else if (u.email) rawIdentifier = u.email;
-      else {
-        let id = u._id || '';
-        rawIdentifier = (id + '').replace('usuario_', '').slice(0, 10) || 'Usuario';
+      // Prioridad 2: Usuario poblado (email)
+      if (u.email) return u.email.split('@')[0];
+
+      // Prioridad 3: Seguir rastro de IDs (autor_id o usuario_id)
+      const subId = u.autor_id || u.usuario_id;
+      if (subId && subId !== u) {
+        return this.getMemberName(subId);
       }
+
+      // Prioridad 4: Guest ID
+      if (u.guest_id) return 'Invitado';
+
+      // Fallback: ID del propio objeto
+      const objId = u._id || u.posit_id;
+      if (objId) return (objId + '').replace('usuario_', '').slice(0, 12);
     }
 
-    // 4. Si u es un string directo (ID o Email)
-    if (!rawIdentifier) {
-      rawIdentifier = u + '';
-    }
-
-    // --- LÓGICA DE FORMATEO FINAL ---
-    if (rawIdentifier.includes('@')) {
-      return rawIdentifier.split('@')[0];
-    }
-
-    if (rawIdentifier.startsWith('guest_')) return 'Invitado';
-
-    return rawIdentifier.replace('usuario_', '').slice(0, 10);
+    return 'Anónimo';
   }
 
   // Modal state
@@ -182,7 +177,7 @@ export class Mural implements OnInit, OnDestroy {
     // 5. Configurar Throttling para mis movimientos
     this.subs.push(
       this.dragSubject.pipe(throttleTime(16)).subscribe((pos) => {
-        const name = this.auth.getUserName() || this.getGuestData()?.nombre || 'Anónimo';
+        const name = this.auth.getUserName() || this.getGuestData()?.nombre || 'Colaborador';
         this.wsService.emitDrag(this.id!, pos.positId, { x: pos.x, y: pos.y }, name);
       })
     );

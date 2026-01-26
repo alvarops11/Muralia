@@ -49,39 +49,57 @@ io.on('connection', (socket) => {
   socket.on('parar_posit', (data) => {
     socket.to(data.boardId).emit('posit_parado', data);
   });
+});
 
-  // --- BLOQUEO DE EDICIÓN ---
-  // Mapa para guardar los timeouts de bloqueo: { "boardId:positId": timeoutId }
-  const lockTimeouts = new Map<string, NodeJS.Timeout>();
+// --- BLOQUEO DE EDICIÓN GLOBAL ---
+// Mapa para guardar los timeouts de bloqueo y usuario: { "boardId:positId": { timeout, usuario } }
+const lockRegistry = new Map<string, { timeout: NodeJS.Timeout, usuario: string }>();
+
+// 4. Lógica de Sockets
+io.on('connection', (socket) => {
+  console.log(`⚡ Cliente conectado: ${socket.id}`);
+
+  // Unirse a una sala (Tablero)
+  socket.on('entrar_tablero', (boardId: string) => {
+    socket.join(boardId);
+
+    // Al entrar, enviar el estado actual de bloqueos de ESE tablero
+    const currentLocks: { [positId: string]: string } = {};
+    lockRegistry.forEach((value, key) => {
+      const [bId, pId] = key.split(':');
+      if (bId === boardId) {
+        currentLocks[pId] = value.usuario;
+      }
+    });
+
+    if (Object.keys(currentLocks).length > 0) {
+      socket.emit('estado_bloqueos', currentLocks);
+    }
+  });
 
   socket.on('bloquear_posit', (data: { boardId: string, positId: string, usuario: string }) => {
-    // data = { boardId, positId, usuario }
     const lockKey = `${data.boardId}:${data.positId}`;
-    
-    // Si ya existe un timeout (renovación o error), lo limpiamos
-    if (lockTimeouts.has(lockKey)) {
-      clearTimeout(lockTimeouts.get(lockKey));
+
+    if (lockRegistry.has(lockKey)) {
+      clearTimeout(lockRegistry.get(lockKey)!.timeout);
     }
 
-    // Emitimos a los demás
     socket.to(data.boardId).emit('posit_bloqueado', data);
 
-    // Programamos el desbloqueo automático en 2 minutos (120000 ms)
     const timeout = setTimeout(() => {
       console.log(`⏰ Límite de tiempo excedido para posit ${data.positId} en tablero ${data.boardId}`);
       io.to(data.boardId).emit('posit_desbloqueado', { boardId: data.boardId, positId: data.positId });
-      lockTimeouts.delete(lockKey);
+      lockRegistry.delete(lockKey);
     }, 120000);
 
-    lockTimeouts.set(lockKey, timeout);
+    lockRegistry.set(lockKey, { timeout, usuario: data.usuario });
   });
 
   socket.on('desbloquear_posit', (data: { boardId: string, positId: string }) => {
-    // data = { boardId, positId }
     const lockKey = `${data.boardId}:${data.positId}`;
-    if (lockTimeouts.has(lockKey)) {
-      clearTimeout(lockTimeouts.get(lockKey));
-      lockTimeouts.delete(lockKey);
+    if (lockRegistry.has(lockKey)) {
+      clearTimeout(lockRegistry.get(lockKey)!.timeout);
+      lockRegistry.delete(lockKey);
     }
     socket.to(data.boardId).emit('posit_desbloqueado', data);
   });

@@ -160,14 +160,16 @@
         <div *ngIf="board" class="team-section">
             <h4>EQUIPO ({{ board.participantes.length }})</h4>
 
-            <div *ngFor="let p of board.participantes" class="team-member">
-                <div class="avatar">{{ getMemberName(p) | slice:0:1 | uppercase }}</div>
-                <div class="member-info">
-                    <div class="member-name">{{ getMemberName(p) }}</div>
-                    <div class="member-role">{{ p.permiso }}</div>
+            <div class="team-list">
+                <div *ngFor="let p of board.participantes" class="team-member">
+                    <div class="avatar">{{ getMemberName(p) | slice:0:1 | uppercase }}</div>
+                    <div class="member-info">
+                        <div class="member-name">{{ getMemberName(p) }}</div>
+                        <div class="member-role">{{ p.permiso }}</div>
+                    </div>
+                    <span *ngIf="isAdmin()" class="remove-icon"
+                        (click)="echarlo(p.usuario_id?._id || p.usuario_id)">×</span>
                 </div>
-                <span *ngIf="isAdmin()" class="remove-icon"
-                    (click)="echarlo(p.usuario_id?._id || p.usuario_id)">×</span>
             </div>
         </div>
 

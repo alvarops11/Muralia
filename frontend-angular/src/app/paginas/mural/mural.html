@@ -64,7 +64,7 @@
                         <div class="attachment-details-modal">
                             <span class="attachment-name-modal">{{ p.archivoNombre }}</span>
                             <div class="attachment-actions-modal">
-                                <button class="btn-action-modal download" (click)="descargarArchivo(p.archivoUrl)">⬇️
+                                <button class="btn-action-modal download" (click)="descargarArchivo(p.archivoUrl, p.archivoNombre)">⬇️
                                     Descargar</button>
                                 <button class="btn-action-modal delete" (click)="borrarArchivo(editPositId)">🗑️
                                     Borrar</button>
@@ -236,7 +236,7 @@
 
                 <!-- Vista Previa de Imagen -->
                 <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'image'" class="note-image-preview"
-                    (click)="descargarArchivo(posit.archivoUrl); $event.stopPropagation()">
+                    (click)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()">
                     <img [src]="getFullUrl(posit.archivoUrl)" [alt]="posit.archivoNombre">
                 </div>
 
@@ -248,7 +248,7 @@
 
                 <!-- Archivo Genérico -->
                 <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'other'" class="note-attachment"
-                    (click)="descargarArchivo(posit.archivoUrl); $event.stopPropagation()">
+                    (click)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()">
                     <span class="attachment-icon">📄</span>
                     <span class="attachment-name">{{ posit.archivoNombre }}</span>
                 </div>

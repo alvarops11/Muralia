@@ -111,31 +111,56 @@ export class Exportar {
     const contentWidth = pageWidth - (margin * 2);
     let y = margin;
 
-    // --- HEADER ---
+    // --- HEADER CON LOGO (NUEVO) ---
     if (this.opciones.incluirTitulo && this.board) {
-      // Título Principal
-      doc.setFontSize(24);
-      doc.setTextColor(55, 65, 81); // Gris Oscuro
+      // Dibujar Barra Superior de Color
+      doc.setFillColor(85, 112, 241); // #5570f1 (Color de la marca)
+      doc.rect(0, 0, pageWidth, 4, 'F');
+
+      // 1. Logotipo de Muralia
+      doc.setFontSize(22);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(55, 65, 81); // Gris oscuro
+      const brandText = 'Muralia';
+      doc.text(brandText, margin, y + 15);
+
+      // El puntito del logo
+      const textWidth = doc.getTextWidth(brandText);
+      doc.setFillColor(85, 112, 241);
+      doc.circle(margin + textWidth + 2.5, y + 14.5, 1.2, 'F');
+
+      // Subtítulo / Fecha de exportación (Opcional, queda elegante)
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(156, 163, 175);
+      const exportDate = new Date().toLocaleDateString();
+      doc.text(`Exportado el ${exportDate}`, pageWidth - margin, y + 15, { align: 'right' });
+
+      y += 25;
+
+      // 2. Título del Mural
+      doc.setFontSize(28);
+      doc.setTextColor(31, 41, 55);
       doc.setFont('helvetica', 'bold');
       const title = this.board.titulo || 'Mural sin título';
       const titleLines = doc.splitTextToSize(title, contentWidth);
-      doc.text(titleLines, margin, y + 8);
-      y += (titleLines.length * 10) + 5;
+      doc.text(titleLines, margin, y);
+      y += (titleLines.length * 10) + 4;
 
-      // Descripción
+      // 3. Descripción
       doc.setFontSize(11);
-      doc.setTextColor(107, 114, 128); // Gris Medio
+      doc.setTextColor(107, 114, 128);
       doc.setFont('helvetica', 'normal');
       const desc = this.board.descripcion || 'Sin descripción';
       const descLines = doc.splitTextToSize(desc, contentWidth);
       doc.text(descLines, margin, y);
-      y += (descLines.length * 6) + 10;
+      y += (descLines.length * 6) + 12;
 
-      // Separador Header
-      doc.setDrawColor(229, 231, 235); // Gris muy claro
-      doc.setLineWidth(0.5);
+      // Línea divisoria suave
+      doc.setDrawColor(243, 244, 246);
+      doc.setLineWidth(0.3);
       doc.line(margin, y, pageWidth - margin, y);
-      y += 10;
+      y += 12;
     }
 
     // --- PREPARAR MAPA DE NOMBRES ---
@@ -314,7 +339,19 @@ export class Exportar {
       y += cardHeight + 5; // 5mm margin bottom entre tarjetas
     });
 
-    doc.save(`Mural_${this.board?.titulo || 'Export'}.pdf`);
+    // Limpiar el nombre del archivo de forma agresiva para evitar caracteres extraños (Ø=ÜÎ...)
+    let cleanTitle = this.board?.titulo || 'Export';
+
+    // 1. Normalizar acentos y eñes (separar caracteres de marcas de acento)
+    cleanTitle = cleanTitle.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+
+    // 2. Reemplazar espacios y caracteres no permitidos por guiones bajos
+    cleanTitle = cleanTitle.trim().replace(/\s+/g, '_').replace(/[^a-zA-Z0-9_\-]/g, '');
+
+    // 3. Fallback si queda vacío
+    if (!cleanTitle) cleanTitle = 'Mural_Export';
+
+    doc.save(`${cleanTitle}.pdf`);
     this.close();
   }
 }

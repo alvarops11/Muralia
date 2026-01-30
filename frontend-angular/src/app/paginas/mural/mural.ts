@@ -632,8 +632,14 @@ export class Mural implements OnInit, OnDestroy {
     }
   }
 
-  descargarArchivo(url: string) {
-    window.open(this.getFullUrl(url), '_blank');
+  descargarArchivo(url: string, originalName: string) {
+    const fullUrl = this.getFullUrl(url);
+    const link = document.createElement('a');
+    link.href = fullUrl;
+    link.download = originalName || 'archivo';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   }
 
   getFullUrl(path: string): string {

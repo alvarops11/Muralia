@@ -64,7 +64,8 @@
                         <div class="attachment-details-modal">
                             <span class="attachment-name-modal">{{ p.archivoNombre }}</span>
                             <div class="attachment-actions-modal">
-                                <button class="btn-action-modal download" (click)="descargarArchivo(p.archivoUrl, p.archivoNombre)">⬇️
+                                <button class="btn-action-modal download"
+                                    (click)="descargarArchivo(p.archivoUrl, p.archivoNombre)">⬇️
                                     Descargar</button>
                                 <button class="btn-action-modal delete" (click)="borrarArchivo(editPositId)">🗑️
                                     Borrar</button>
@@ -203,9 +204,9 @@
 
             <div *ngFor="let posit of board.posits" class="note" [class.yellow]="posit.color === '#fef3c7'"
                 [style.background-color]="posit.color" cdkDrag cdkDragHandle [attr.data-posit-id]="posit.posit_id"
-                [cdkDragDisabled]="!canEdit()" (cdkDragStarted)="alEmpezarDrag()"
-                (cdkDragMoved)="alMoverDrag($event, posit)" (cdkDragEnded)="alSoltarDrag(posit)"
-                [class.being-moved-remote]="ghosts[posit.posit_id]">
+                [cdkDragDisabled]="!canEdit() || dragBlockedByOthers.has(posit.posit_id)"
+                (cdkDragStarted)="alEmpezarDrag(posit)" (cdkDragMoved)="alMoverDrag($event, posit)"
+                (cdkDragEnded)="alSoltarDrag(posit)" [class.being-moved-remote]="ghosts[posit.posit_id]">
 
                 <div class="custom-placeholder" *cdkDragPlaceholder></div>
 

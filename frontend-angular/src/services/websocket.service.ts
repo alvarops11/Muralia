@@ -35,6 +35,43 @@ export class WebsocketService {
 
   // --- MOVIMIENTO EN TIEMPO REAL (Ghosts) ---
 
+  // Solicitar permiso para arrastrar (NUEVO - AUTORIZACIÓN REQUERIDA)
+  requestDrag(boardId: string, positId: string, userId: string) {
+    this.socket.emit('solicitar_drag', { boardId, positId, userId });
+  }
+
+  // Escuchar concesión de permiso
+  onDragGranted(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('drag_concedido', (data) => subscriber.next(data));
+      return () => this.socket.off('drag_concedido');
+    });
+  }
+
+  // Escuchar denegación de permiso
+  onDragDenied(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('drag_denegado', (data) => subscriber.next(data));
+      return () => this.socket.off('drag_denegado');
+    });
+  }
+
+  // Escuchar cuando otro usuario bloquea un posit
+  onDragBlocked(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('drag_bloqueado', (data) => subscriber.next(data));
+      return () => this.socket.off('drag_bloqueado');
+    });
+  }
+
+  // Escuchar cuando se libera un lock de drag
+  onDragReleased(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('drag_liberado', (data) => subscriber.next(data));
+      return () => this.socket.off('drag_liberado');
+    });
+  }
+
   // Enviar mis coordenadas
   emitDrag(boardId: string, positId: string, pos: { x: number, y: number }, usuario: string) {
     this.socket.emit('moviendo_posit', { boardId, positId, ...pos, usuario });

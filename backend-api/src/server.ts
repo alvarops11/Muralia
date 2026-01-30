@@ -22,6 +22,15 @@ const io = new Server(httpServer, {
 // 3. Guardamos la instancia para usarla en los controladores
 app.set('socketio', io);
 
+// --- SISTEMA DE LOCKS AUTORITATIVOS PARA DRAG (GLOBAL) ---
+type DragLock = {
+  userId: string;
+  socketId: string;
+  timeout: NodeJS.Timeout;
+};
+
+const dragLocks = new Map<string, DragLock>();
+
 // 4. Lógica de Sockets
 io.on('connection', (socket) => {
   console.log(`⚡ Cliente conectado: ${socket.id}`);
@@ -36,17 +45,65 @@ io.on('connection', (socket) => {
     socket.leave(boardId);
   });
 
-  // --- MOVIMIENTO EN TIEMPO REAL (GHOSTS) ---
-  // Estos eventos son ligeros y NO tocan la base de datos.
-  // Solo rebotan las coordenadas a los otros usuarios.
+  // --- EVENTOS DE DRAG CON LOCKS AUTORITATIVOS ---
 
+  // Evento: Solicitar permiso para arrastrar
+  socket.on('solicitar_drag', (data: { boardId: string, positId: string, userId: string }) => {
+    const lockKey = `${data.boardId}:${data.positId}`;
+
+    // Verificar si ya existe un lock
+    if (dragLocks.has(lockKey)) {
+      // Denegar: otro usuario ya está arrastrando este posit
+      socket.emit('drag_denegado', { positId: data.positId, reason: 'locked_by_other' });
+      return;
+    }
+
+    // Conceder el lock
+    const timeout = setTimeout(() => {
+      console.log(`⏰ Timeout de drag para posit ${data.positId} en tablero ${data.boardId}`);
+      dragLocks.delete(lockKey);
+      io.to(data.boardId).emit('drag_liberado', { positId: data.positId });
+    }, 15000); // 15 segundos
+
+    dragLocks.set(lockKey, {
+      userId: data.userId,
+      socketId: socket.id,
+      timeout
+    });
+
+    // Notificar al solicitante
+    socket.emit('drag_concedido', { positId: data.positId });
+
+    // Notificar a los demás usuarios
+    socket.to(data.boardId).emit('drag_bloqueado', { positId: data.positId, usuario: data.userId });
+  });
+
+  // Evento: Movimiento de posit (CON VALIDACIÓN ESTRICTA)
   socket.on('moviendo_posit', (data) => {
-    // data = { boardId, positId, x, y, usuario, color, titulo }
-    // Enviamos a todos en la sala MENOS al que lo envía (broadcast)
+    const lockKey = `${data.boardId}:${data.positId}`;
+    const lock = dragLocks.get(lockKey);
+
+    // VALIDACIÓN AUTORITATIVA: Solo retransmitir si el socket tiene el lock
+    if (!lock || lock.socketId !== socket.id) {
+      console.warn(`⚠️ Movimiento rechazado: posit ${data.positId} no tiene lock válido para socket ${socket.id}`);
+      return; // IGNORAR completamente
+    }
+
+    // Lock válido: retransmitir a los demás
     socket.to(data.boardId).emit('posit_moviendose', data);
   });
 
+  // Evento: Parar arrastre
   socket.on('parar_posit', (data) => {
+    const lockKey = `${data.boardId}:${data.positId}`;
+    const lock = dragLocks.get(lockKey);
+
+    if (lock && lock.socketId === socket.id) {
+      clearTimeout(lock.timeout);
+      dragLocks.delete(lockKey);
+      io.to(data.boardId).emit('drag_liberado', { positId: data.positId });
+    }
+
     socket.to(data.boardId).emit('posit_parado', data);
   });
 });
@@ -106,6 +163,19 @@ io.on('connection', (socket) => {
 
   socket.on('disconnect', () => {
     console.log(`❌ Cliente desconectado: ${socket.id}`);
+
+    // Limpiar todos los drag locks del socket desconectado
+    dragLocks.forEach((lock, key) => {
+      if (lock.socketId === socket.id) {
+        clearTimeout(lock.timeout);
+        dragLocks.delete(key);
+
+        // Extraer boardId y positId del key
+        const [boardId, positId] = key.split(':');
+        io.to(boardId).emit('drag_liberado', { positId });
+        console.log(`🔓 Drag lock liberado automáticamente para posit ${positId} (disconnect)`);
+      }
+    });
   });
 });
 

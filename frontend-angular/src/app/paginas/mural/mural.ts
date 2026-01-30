@@ -107,6 +107,12 @@ export class Mural implements OnInit, OnDestroy {
   // Locks: { positId: usuario }
   locks: { [key: string]: string } = {};
 
+  // -- Control de Permisos de Drag (NUEVO - SISTEMA AUTORITATIVO) --
+  dragPermissions = new Set<string>(); // posits con permiso concedido
+  dragPending: string | null = null; // posit esperando permiso
+  dragBlockedByOthers = new Set<string>(); // posits bloqueados por otros
+  dragCurrentPosit: any = null; // posit actual siendo arrastrado
+
   // -- Control de Sockets y Ghosts --
   wsSubscription?: Subscription;
   private subs: Subscription[] = [];
@@ -174,7 +180,43 @@ export class Mural implements OnInit, OnDestroy {
       })
     );
 
-    // 5. Configurar Throttling para mis movimientos
+    // 5. Suscribirse a eventos de autorización de drag (NUEVO - SISTEMA AUTORITATIVO)
+    this.subs.push(
+      this.wsService.onDragGranted().subscribe((data: any) => {
+        console.log('✅ Permiso de drag concedido para posit:', data.positId);
+        this.dragPermissions.add(data.positId);
+        this.dragPending = null;
+        this.cd.detectChanges();
+      })
+    );
+
+    this.subs.push(
+      this.wsService.onDragDenied().subscribe((data: any) => {
+        console.warn('❌ Permiso de drag denegado para posit:', data.positId);
+        this.dragPending = null;
+        this.notify.error('Otro usuario está moviendo este posit');
+        this.cd.detectChanges();
+      })
+    );
+
+    this.subs.push(
+      this.wsService.onDragBlocked().subscribe((data: any) => {
+        console.log('🔒 Posit bloqueado por otro usuario:', data.positId);
+        this.dragBlockedByOthers.add(data.positId);
+        this.cd.detectChanges();
+      })
+    );
+
+    this.subs.push(
+      this.wsService.onDragReleased().subscribe((data: any) => {
+        console.log('🔓 Posit liberado:', data.positId);
+        this.dragBlockedByOthers.delete(data.positId);
+        this.dragPermissions.delete(data.positId);
+        this.cd.detectChanges();
+      })
+    );
+
+    // 6. Configurar Throttling para mis movimientos
     this.subs.push(
       this.dragSubject.pipe(throttleTime(16)).subscribe((pos) => {
         const name = this.auth.getUserName() || this.getGuestData()?.nombre || 'Colaborador';
@@ -182,7 +224,7 @@ export class Mural implements OnInit, OnDestroy {
       })
     );
 
-    // 6. Bloqueos de edición
+    // 7. Bloqueos de edición
     this.subs.push(
       this.wsService.onLock().subscribe((data: any) => {
         this.locks[data.positId] = data.usuario;
@@ -201,6 +243,7 @@ export class Mural implements OnInit, OnDestroy {
       })
     );
 
+    // 8. Sincronización de estado de bloqueos de edición
     this.subs.push(
       this.wsService.onLockSync().subscribe((data: any) => {
         // data = { positId: usuario, ... }
@@ -393,13 +436,35 @@ export class Mural implements OnInit, OnDestroy {
     return this.currentUserRole === 'admin';
   }
 
-  // --- EVENTOS DRAG LOCALES ---
-  alEmpezarDrag() {
-    this.cd.detectChanges();
+  // --- EVENTOS DRAG LOCALES (CON SISTEMA AUTORITATIVO) ---
+
+  // CRÍTICO: Solicitar permiso ANTES de permitir el drag
+  alEmpezarDrag(posit: any) {
+    if (!this.id) return;
+
+    // Verificar si el posit está bloqueado por otro usuario
+    if (this.dragBlockedByOthers.has(posit.posit_id)) {
+      this.notify.error('Otro usuario está moviendo este posit');
+      return;
+    }
+
+    // Solicitar permiso al servidor
+    const userId = this.auth.getUserId() || this.getGuestData()?.guestId || 'guest';
+    this.dragPending = posit.posit_id;
+    this.dragCurrentPosit = posit;
+    this.wsService.requestDrag(this.id, posit.posit_id, userId);
+
+    console.log('🔑 Solicitando permiso de drag para posit:', posit.posit_id);
   }
 
   // Se dispara mientras arrastro (Angular CDK)
   alMoverDrag(event: CdkDragMove, posit: any) {
+    // VALIDACIÓN CRÍTICA: Solo emitir si tenemos permiso concedido
+    if (!this.dragPermissions.has(posit.posit_id)) {
+      console.warn('⚠️ Intento de mover sin permiso, ignorando:', posit.posit_id);
+      return;
+    }
+
     // Obtenemos coordenadas absolutas del ratón
     const { x, y } = event.pointerPosition;
     // Emitimos al Subject (que controla la frecuencia de envío)
@@ -413,6 +478,11 @@ export class Mural implements OnInit, OnDestroy {
   // Se dispara al soltar (antes de guardar)
   alSoltarDrag(posit: any) {
     if (this.id) this.wsService.emitStopDrag(this.id, posit.posit_id);
+
+    // Limpiar permisos locales
+    this.dragPermissions.delete(posit.posit_id);
+    this.dragPending = null;
+    this.dragCurrentPosit = null;
   }
 
   // Se dispara al completar el drop (Guardar en BD)

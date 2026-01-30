@@ -3,6 +3,7 @@ import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { Router } from '@angular/router';
 import { AUTH_CONFIG } from '../auth.config';
+import { environment } from '../../environments/environment';
 
 interface AuthResponse {
     message: string;
@@ -31,7 +32,7 @@ interface LoginData {
     providedIn: 'root'
 })
 export class AuthService {
-    private readonly API_URL = 'http://localhost:3000/api/auth';
+    private readonly API_URL = environment.apiUrl + '/api/auth';
     private readonly TOKEN_KEY = 'jwt_token';
     private readonly USER_KEY = 'auth_user';
 

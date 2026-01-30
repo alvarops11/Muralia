@@ -7,6 +7,7 @@ import { connectDB } from './config/database';
 dotenv.config();
 
 const PORT = process.env.PORT || 3000;
+const HOST = process.env.HOST || 'localhost';
 
 // 1. Creamos el servidor HTTP envolviendo a Express
 const httpServer = createServer(app);
@@ -111,7 +112,7 @@ io.on('connection', (socket) => {
 
 // 5. Arrancar servidor
 connectDB().then(() => {
-  httpServer.listen(PORT, () => {
-    console.log(`🚀 Servidor HTTP + WebSocket corriendo en http://localhost:${PORT}`);
+  httpServer.listen(Number(PORT), HOST, () => {
+    console.log(`🚀 Servidor HTTP + WebSocket corriendo en http://${HOST}:${PORT}`);
   });
 });

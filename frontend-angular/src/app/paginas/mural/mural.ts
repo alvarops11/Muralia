@@ -1,6 +1,7 @@
 import { Component, Input, OnInit, OnDestroy, inject, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { environment } from '../../../environments/environment';
 import { ApiService } from '../../api.service';
 import { RouterLink, ActivatedRoute, Router } from '@angular/router';
 import { DragDropModule, CdkDragDrop, CdkDragMove, moveItemInArray } from '@angular/cdk/drag-drop';
@@ -638,7 +639,7 @@ export class Mural implements OnInit, OnDestroy {
 
   getFullUrl(path: string): string {
     if (!path) return '';
-    return `http://localhost:3000${path}`;
+    return `${environment.apiUrl}${path}`;
   }
 
   getFileType(filename: string): 'image' | 'audio' | 'video' | 'other' {

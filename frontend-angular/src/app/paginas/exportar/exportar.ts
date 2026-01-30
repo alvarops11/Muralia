@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { environment } from '../../../environments/environment';
 
 @Component({
   selector: 'app-exportar',
@@ -285,7 +286,7 @@ export class Exportar {
 
         // Clickable Link
         if (p.archivoUrl) {
-          const linkUrl = `http://localhost:3000${p.archivoUrl}`;
+          const linkUrl = `${environment.apiUrl}${p.archivoUrl}`;
           const linkWidth = doc.getTextWidth(`📎 ${cleanFileName}`);
           doc.link(textX, currentY - 2, linkWidth, 6, { url: linkUrl });
         }

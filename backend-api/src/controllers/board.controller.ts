@@ -19,13 +19,14 @@ import Invitation from '../models/Invitation';
 
 // --- HELPER PARA SOCKETS (NUEVO) ---
 // Función auxiliar para no repetir código. Emite el evento a la sala del tablero.
-const emitirActualizacion = (req: Request, boardId: string, accion: string) => {
+const emitirActualizacion = (req: Request, boardId: string, accion: string, payload?: any) => {
   const io = req.app.get('socketio');
   if (io) {
     // Enviamos un evento 'tablero_actualizado' a todos en la sala 'boardId'
     io.to(boardId).emit('tablero_actualizado', {
       accion,
-      autor: req.currentUser?.email
+      autor: req.currentUser?.email,
+      payload // Datos actualizados (opcional)
     });
   }
 };
@@ -265,7 +266,8 @@ export const updatePosit = async (req: Request, res: Response) => {
     await board.save();
 
     // 🔥 SOCKET
-    emitirActualizacion(req, boardId, 'updatePosit');
+    // 🔥 SOCKET: Enviamos la lista de posits actualizada para evitar recarga completa
+    emitirActualizacion(req, boardId, 'updatePosit', board.posits);
 
     res.json({ message: 'Posit actualizado y reordenado', posit });
 

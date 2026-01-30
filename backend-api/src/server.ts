@@ -24,37 +24,13 @@ const io = new Server(httpServer, {
 app.set('socketio', io);
 
 // 4. Lógica de Sockets
-io.on('connection', (socket) => {
-  console.log(`⚡ Cliente conectado: ${socket.id}`);
-
-  // Unirse a una sala (Tablero)
-  socket.on('entrar_tablero', (boardId: string) => {
-    socket.join(boardId);
-  });
-
-  // Salir de la sala
-  socket.on('salir_tablero', (boardId: string) => {
-    socket.leave(boardId);
-  });
-
-  // --- MOVIMIENTO EN TIEMPO REAL (GHOSTS) ---
-  // Estos eventos son ligeros y NO tocan la base de datos.
-  // Solo rebotan las coordenadas a los otros usuarios.
-
-  socket.on('moviendo_posit', (data) => {
-    // data = { boardId, positId, x, y, usuario, color, titulo }
-    // Enviamos a todos en la sala MENOS al que lo envía (broadcast)
-    socket.to(data.boardId).emit('posit_moviendose', data);
-  });
-
-  socket.on('parar_posit', (data) => {
-    socket.to(data.boardId).emit('posit_parado', data);
-  });
-});
-
 // --- BLOQUEO DE EDICIÓN GLOBAL ---
 // Mapa para guardar los timeouts de bloqueo y usuario: { "boardId:positId": { timeout, usuario } }
 const lockRegistry = new Map<string, { timeout: NodeJS.Timeout, usuario: string }>();
+
+// --- BLOQUEO DE ARRASTRE ---
+// Mapa para saber quién está arrastrando qué: { "boardId:positId": usuario }
+const dragLockRegistry = new Map<string, string>();
 
 // 4. Lógica de Sockets
 io.on('connection', (socket) => {
@@ -64,7 +40,7 @@ io.on('connection', (socket) => {
   socket.on('entrar_tablero', (boardId: string) => {
     socket.join(boardId);
 
-    // Al entrar, enviar el estado actual de bloqueos de ESE tablero
+    // Al entrar, enviar el estado actual de bloqueos de edición de ESE tablero
     const currentLocks: { [positId: string]: string } = {};
     lockRegistry.forEach((value, key) => {
       const [bId, pId] = key.split(':');
@@ -76,8 +52,36 @@ io.on('connection', (socket) => {
     if (Object.keys(currentLocks).length > 0) {
       socket.emit('estado_bloqueos', currentLocks);
     }
+
+    // Enviar el estado actual de bloqueos de arrastre
+    const currentDragLocks: { [positId: string]: string } = {};
+    dragLockRegistry.forEach((usuario, key) => {
+      const [bId, pId] = key.split(':');
+      if (bId === boardId) {
+        currentDragLocks[pId] = usuario;
+      }
+    });
+
+    if (Object.keys(currentDragLocks).length > 0) {
+      socket.emit('estado_arrastres', currentDragLocks);
+    }
   });
 
+  // Salir de la sala
+  socket.on('salir_tablero', (boardId: string) => {
+    socket.leave(boardId);
+  });
+
+  // --- MOVIMIENTO EN TIEMPO REAL (GHOSTS) ---
+  socket.on('moviendo_posit', (data) => {
+    socket.to(data.boardId).emit('posit_moviendose', data);
+  });
+
+  socket.on('parar_posit', (data) => {
+    socket.to(data.boardId).emit('posit_parado', data);
+  });
+
+  // --- BLOQUEO DE EDICIÓN ---
   socket.on('bloquear_posit', (data: { boardId: string, positId: string, usuario: string }) => {
     const lockKey = `${data.boardId}:${data.positId}`;
 
@@ -103,6 +107,31 @@ io.on('connection', (socket) => {
       lockRegistry.delete(lockKey);
     }
     socket.to(data.boardId).emit('posit_desbloqueado', data);
+  });
+
+  // --- BLOQUEO DE ARRASTRE ---
+  socket.on('bloquear_arrastre', (data: { boardId: string, positId: string, usuario: string }) => {
+    const dragKey = `${data.boardId}:${data.positId}`;
+
+    // Si ya está bloqueado por otro (que NO sea el mismo usuario reconectando?)
+    if (dragLockRegistry.has(dragKey) && dragLockRegistry.get(dragKey) !== data.usuario) {
+      console.log(`⚠️ Posit ${data.positId} ya está siendo arrastrado por otro usuario`);
+      // Avisar al que intentó bloquear que falló
+      socket.emit('arrastre_bloqueado_error', { positId: data.positId, usuario: dragLockRegistry.get(dragKey) });
+      return;
+    }
+
+    dragLockRegistry.set(dragKey, data.usuario);
+    // Confirmar al usuario que tuvo éxito
+    socket.emit('arrastre_bloqueado_ok', { positId: data.positId });
+    // Avisar al resto
+    socket.to(data.boardId).emit('arrastre_bloqueado', data);
+  });
+
+  socket.on('desbloquear_arrastre', (data: { boardId: string, positId: string }) => {
+    const dragKey = `${data.boardId}:${data.positId}`;
+    dragLockRegistry.delete(dragKey);
+    socket.to(data.boardId).emit('arrastre_desbloqueado', data);
   });
 
   socket.on('disconnect', () => {

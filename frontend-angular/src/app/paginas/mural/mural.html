@@ -201,17 +201,22 @@
         <div *ngIf="board" class="notes-grid" cdkDropList cdkDropListOrientation="mixed"
             (cdkDropListDropped)="soltar($event)">
 
-            <div *ngFor="let posit of board.posits" class="note" [class.yellow]="posit.color === '#fef3c7'"
-                [style.background-color]="posit.color" cdkDrag cdkDragHandle [attr.data-posit-id]="posit.posit_id"
-                [cdkDragDisabled]="!canEdit()" (cdkDragStarted)="alEmpezarDrag()"
-                (cdkDragMoved)="alMoverDrag($event, posit)" (cdkDragEnded)="alSoltarDrag(posit)"
-                [class.being-moved-remote]="ghosts[posit.posit_id]">
+            <div *ngFor="let posit of board.posits; trackBy: trackByPosit" class="note"
+                [class.yellow]="posit.color === '#fef3c7'" [style.background-color]="posit.color" cdkDrag cdkDragHandle
+                [attr.data-posit-id]="posit.posit_id" [cdkDragDisabled]="!canEdit() || !!draggingLocks[posit.posit_id]"
+                (cdkDragStarted)="alEmpezarDrag(posit)" (cdkDragMoved)="alMoverDrag($event, posit)"
+                (cdkDragEnded)="alSoltarDrag(posit)" [class.being-moved-remote]="ghosts[posit.posit_id]"
+                [class.being-dragged-other]="draggingLocks[posit.posit_id]">
 
                 <div class="custom-placeholder" *cdkDragPlaceholder></div>
 
                 <div class="note-header">
                     <span *ngIf="canEdit()" class="drag-handle">⋮⋮⋮</span>
                     <span class="order-tag">#{{ posit.posicion?.orden }}</span>
+
+                    <span *ngIf="draggingLocks[posit.posit_id]" class="dragging-badge"
+                        [title]="'Arrastrando: ' + draggingLocks[posit.posit_id]">🔄 {{ draggingLocks[posit.posit_id]
+                        }}</span>
 
                     <div *ngIf="canEdit()" class="header-actions">
                         <span *ngIf="locks[posit.posit_id]" class="lock-icon"

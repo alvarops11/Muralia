@@ -108,6 +108,9 @@ export class Mural implements OnInit, OnDestroy {
   // Locks: { positId: usuario }
   locks: { [key: string]: string } = {};
 
+  // Locks de arrastre: { positId: usuario }
+  draggingLocks: { [key: string]: string } = {};
+
   // -- Control de Sockets y Ghosts --
   wsSubscription?: Subscription;
   private subs: Subscription[] = [];
@@ -143,10 +146,20 @@ export class Mural implements OnInit, OnDestroy {
     this.subs.push(
       this.wsService.onUpdate().subscribe((data: any) => {
         console.log('🔄 Update DB:', data);
+
+        // Optimización: Si el servidor manda los datos nuevos, los usamos directamente
+        if (data.accion === 'updatePosit' && data.payload && this.board) {
+          console.log('⚡ Actualización rápida de posits recibida');
+          this.board.posits = data.payload;
+          this.cd.detectChanges();
+        } else {
+          // Fallback: Recarga completa (más lenta)
+          this.cargar(true);
+        }
+
         if (data.accion === 'userJoined') {
           console.log('👥 Usuario nuevo unido');
         }
-        this.cargar(true); // Recarga silenciosa
       })
     );
 
@@ -207,6 +220,43 @@ export class Mural implements OnInit, OnDestroy {
         // data = { positId: usuario, ... }
         this.locks = { ...this.locks, ...data };
         this.cd.detectChanges();
+      })
+    );
+
+    // 7. Bloqueos de arrastre
+    this.subs.push(
+      this.wsService.onDragLock().subscribe((data: any) => {
+        this.draggingLocks[data.positId] = data.usuario;
+        this.cd.detectChanges();
+      })
+    );
+
+    this.subs.push(
+      this.wsService.onDragUnlock().subscribe((data: any) => {
+        delete this.draggingLocks[data.positId];
+        this.cd.detectChanges();
+      })
+    );
+
+    this.subs.push(
+      this.wsService.onDragLockSync().subscribe((data: any) => {
+        this.draggingLocks = { ...this.draggingLocks, ...data };
+        this.cd.detectChanges();
+      })
+    );
+
+    this.subs.push(
+      this.wsService.onDragLockError().subscribe((data: any) => {
+        // Fallo crítico de bloqueo: El servidor rechazó nuestro intento
+        this.draggingLocks[data.positId] = data.usuario;
+        this.notify.error(`⚠️ Ese posit ya lo tiene ${data.usuario}`);
+
+        // Forzar recarga para corregir posición visual
+        // Esto cancelará implícitamente cualquier drag local en conflicto visual
+        this.cargar(true);
+
+        // Disparar evento de ratón 'mouseup' para soltar cualquier drag activo
+        document.dispatchEvent(new Event('mouseup'));
       })
     );
   }
@@ -395,7 +445,12 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   // --- EVENTOS DRAG LOCALES ---
-  alEmpezarDrag() {
+  alEmpezarDrag(posit: any) {
+    // Bloquear el posit para arrastre
+    if (this.id) {
+      const userName = this.auth.getUserName() || this.getGuestData()?.nombre || 'Usuario';
+      this.wsService.emitDragLock(this.id, posit.posit_id, userName);
+    }
     this.cd.detectChanges();
   }
 
@@ -413,7 +468,10 @@ export class Mural implements OnInit, OnDestroy {
 
   // Se dispara al soltar (antes de guardar)
   alSoltarDrag(posit: any) {
-    if (this.id) this.wsService.emitStopDrag(this.id, posit.posit_id);
+    if (this.id) {
+      this.wsService.emitStopDrag(this.id, posit.posit_id);
+      this.wsService.emitDragUnlock(this.id, posit.posit_id);
+    }
   }
 
   // Se dispara al completar el drop (Guardar en BD)
@@ -875,9 +933,6 @@ export class Mural implements OnInit, OnDestroy {
     this.api.joinBoard(this.id!, 'editor', { nombre, guestId }).subscribe({
       next: () => {
         console.log('[Mural] Unión exitosa, esperando recarga...');
-        this.guardandoInvitado = false;
-        this.notify.success(`¡Bienvenido ${nombre}!`);
-        // Pequeño delay para dejar que Angular respire
         setTimeout(() => this.cargar(), 100);
       },
       error: (err) => {
@@ -890,5 +945,10 @@ export class Mural implements OnInit, OnDestroy {
         sessionStorage.removeItem(lastJoinKey);
       }
     });
+  }
+
+  // --- Optimización DOM ---
+  trackByPosit(index: number, item: any): string {
+    return item.posit_id;
   }
 }

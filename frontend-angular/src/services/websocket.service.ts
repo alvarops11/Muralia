@@ -92,4 +92,42 @@ export class WebsocketService {
       return () => this.socket.off('estado_bloqueos');
     });
   }
+
+  // --- BLOQUEO DE ARRASTRE ---
+
+  emitDragLock(boardId: string, positId: string, usuario: string) {
+    this.socket.emit('bloquear_arrastre', { boardId, positId, usuario });
+  }
+
+  emitDragUnlock(boardId: string, positId: string) {
+    this.socket.emit('desbloquear_arrastre', { boardId, positId });
+  }
+
+  onDragLock(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('arrastre_bloqueado', (data) => subscriber.next(data));
+      return () => this.socket.off('arrastre_bloqueado');
+    });
+  }
+
+  onDragUnlock(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('arrastre_desbloqueado', (data) => subscriber.next(data));
+      return () => this.socket.off('arrastre_desbloqueado');
+    });
+  }
+
+  onDragLockSync(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('estado_arrastres', (data) => subscriber.next(data));
+      return () => this.socket.off('estado_arrastres');
+    });
+  }
+
+  onDragLockError(): Observable<any> {
+    return new Observable((subscriber) => {
+      this.socket.on('arrastre_bloqueado_error', (data) => subscriber.next(data));
+      return () => this.socket.off('arrastre_bloqueado_error');
+    });
+  }
 }

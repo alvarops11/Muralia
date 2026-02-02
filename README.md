@@ -12,7 +12,7 @@ Antes de iniciar, asegúrese de tener instalado el siguiente software en su equi
 - **Angular CLI** (Instalado globalmente):
   ```bash
   npm install -g @angular/cli
-
+  ```
   ## 2. Instalación del Proyecto
 
 El proyecto se encuentra alojado en un repositorio único que contiene tanto el Backend como el Frontend.

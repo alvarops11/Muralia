@@ -2,7 +2,7 @@
 
 Este manual describe los pasos necesarios para desplegar la aplicación **Muralia** en un entorno local para propósitos de desarrollo o pruebas.
 
-##1. Requisitos Previos
+## 1. Requisitos Previos
 
     Antes de iniciar, asegúrese de tener instalado el siguiente software en su equipo:
     
@@ -14,7 +14,7 @@ Este manual describe los pasos necesarios para desplegar la aplicación **Murali
       npm install -g @angular/cli
       ```
       
- ##2. Instalación del Proyecto
+ ## 2. Instalación del Proyecto
 
         El proyecto se encuentra alojado en un repositorio único que contiene tanto el Backend como el Frontend.
 

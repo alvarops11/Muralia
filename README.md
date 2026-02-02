@@ -4,16 +4,17 @@ Este manual describe los pasos necesarios para desplegar la aplicación **Murali
 
 ## 📋 1. Requisitos Previos
 
-Antes de iniciar, asegúrese de tener instalado el siguiente software en su equipo:
-
-- **[Node.js]** y **NPM**.
-- **[Git]** (para clonar el repositorio).
-- **MongoDB** (Servicio local corriendo o una URI de conexión a MongoDB Atlas).
-- **Angular CLI** (Instalado globalmente):
-  ```bash
-  npm install -g @angular/cli
-  ```
-  ## 2. Instalación del Proyecto
+    Antes de iniciar, asegúrese de tener instalado el siguiente software en su equipo:
+    
+    - **[Node.js]** y **NPM**.
+    - **[Git]** (para clonar el repositorio).
+    - **MongoDB** (Servicio local corriendo o una URI de conexión a MongoDB Atlas).
+    - **Angular CLI** (Instalado globalmente):
+      ```bash
+      npm install -g @angular/cli
+      ```bash
+      
+ ## 🚀2. Instalación del Proyecto
 
         El proyecto se encuentra alojado en un repositorio único que contiene tanto el Backend como el Frontend.
 

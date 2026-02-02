@@ -1,8 +1,8 @@
-# 🎨 Muralia - Manual de Despliegue e Instalación
+# Muralia - Manual de Despliegue e Instalación
 
 Este manual describe los pasos necesarios para desplegar la aplicación **Muralia** en un entorno local para propósitos de desarrollo o pruebas.
 
-## 📋 1. Requisitos Previos
+##1. Requisitos Previos
 
     Antes de iniciar, asegúrese de tener instalado el siguiente software en su equipo:
     
@@ -12,9 +12,9 @@ Este manual describe los pasos necesarios para desplegar la aplicación **Murali
     - **Angular CLI** (Instalado globalmente):
       ```bash
       npm install -g @angular/cli
-      ```bash
+      ```
       
- ## 🚀2. Instalación del Proyecto
+ ##2. Instalación del Proyecto
 
         El proyecto se encuentra alojado en un repositorio único que contiene tanto el Backend como el Frontend.
 
@@ -50,3 +50,29 @@ Este manual describe los pasos necesarios para desplegar la aplicación **Murali
           npm run dev
           # El servidor escuchará en http://localhost:3000
           ```
+
+        ### Paso 3: Configuración del Frontend
+
+        En una nueva terminal, navegue a la carpeta del cliente:
+
+            ```bash
+            cd frontend-angular
+            npm install
+            ```
+
+        Para iniciar la aplicación web:
+
+            ```bash
+            npx ng serve
+            # La aplicación se abrirá automáticamente en http://localhost:4200
+            ```
+
+
+
+### Opción Automatizada (Script)
+
+El equipo ha desarrollado un script de automatización (`lanzar-proyecto.bat`) que instala dependencias, levanta ambos servidores y abre el navegador automáticamente.
+
+1. Localice el archivo `lanzar-proyecto.bat` en la raíz del proyecto.
+2. Haga **doble clic** sobre el archivo.
+3. Se abrirán dos ventanas de terminal (Backend y Frontend) y el navegador predeterminado en `http://localhost:4200`.

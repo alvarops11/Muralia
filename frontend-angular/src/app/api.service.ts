@@ -1,12 +1,13 @@
 // archivo: src/app/api.service.ts
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
+import { CONFIG } from './config/urls.config';
 
 @Injectable({ providedIn: 'root' })
 export class ApiService {
   private http = inject(HttpClient);
   // URL de tu Backend (Asegúrate de que el puerto 3000 sea correcto)
-  private apiUrl = 'http://localhost:3000/api/boards';
+  private apiUrl = `${CONFIG.API_URL}/api/boards`;
 
   // --- TABLEROS ---
   getBoards() { return this.http.get<any[]>(this.apiUrl); }

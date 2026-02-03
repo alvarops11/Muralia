@@ -14,6 +14,7 @@ import { Compartir } from '../compartir/compartir';
 import { Exportar } from '../exportar/exportar';
 import { Estadisticas } from '../estadisticas/estadisticas';
 import { NotificationService } from '../../services/notification.service';
+import { CONFIG } from '../../config/urls.config';
 
 @Component({
   selector: 'app-mural',
@@ -714,7 +715,7 @@ export class Mural implements OnInit, OnDestroy {
 
   getFullUrl(path: string): string {
     if (!path) return '';
-    return `http://localhost:3000${path}`;
+    return `${CONFIG.API_URL}${path}`;
   }
 
   getFileType(filename: string): 'image' | 'audio' | 'video' | 'other' {

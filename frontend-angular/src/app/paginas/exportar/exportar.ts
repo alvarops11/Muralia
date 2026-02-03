@@ -1,6 +1,7 @@
 import { Component, Output, EventEmitter, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { CONFIG } from '../../config/urls.config';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -310,7 +311,7 @@ export class Exportar {
 
         // Clickable Link
         if (p.archivoUrl) {
-          const linkUrl = `http://localhost:3000${p.archivoUrl}`;
+          const linkUrl = `${CONFIG.API_URL}${p.archivoUrl}`;
           const linkWidth = doc.getTextWidth(`📎 ${cleanFileName}`);
           doc.link(textX, currentY - 2, linkWidth, 6, { url: linkUrl });
         }

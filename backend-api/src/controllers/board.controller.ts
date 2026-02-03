@@ -13,7 +13,8 @@ import {
   updatePositSchema,
   inviteUserSchema,
   updateBoardSchema,
-  addCommentSchema
+  addCommentSchema,
+  swapPositsSchema
 } from '../types/validator';
 import Invitation from '../models/Invitation';
 
@@ -272,6 +273,63 @@ export const updatePosit = async (req: Request, res: Response) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error actualizando posit' });
+  }
+};
+
+// 2.5 Intercambiar dos Posits (NUEVO - SWAP ESTRICTO)
+export const swapPosits = async (req: Request, res: Response) => {
+  const { boardId } = req.params;
+  const user = req.currentUser;
+
+  try {
+    console.log('[swapPosits] Body recibido:', JSON.stringify(req.body, null, 2));
+    const { positIdA, positIdB, ordenA, ordenB } = swapPositsSchema.parse(req.body);
+
+    const boardQuery: any = { _id: boardId };
+    if (user) {
+      boardQuery.participantes = {
+        $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
+      };
+    } else {
+      boardQuery.participantes = {
+        $elemMatch: { guest_id: req.body.guestId, permiso: { $in: ['admin', 'editor'] } }
+      };
+    }
+
+    const board = await Board.findOne(boardQuery);
+    if (!board) {
+      console.warn(`[swapPosits] Tablero ${boardId} no encontrado o sin permisos`);
+      return res.status(404).json({ error: 'Tablero no encontrado' });
+    }
+
+    const idxA = board.posits.findIndex(p => p.posit_id === positIdA);
+    const idxB = board.posits.findIndex(p => p.posit_id === positIdB);
+
+    if (idxA === -1 || idxB === -1) {
+      console.warn(`[swapPosits] Posits no encontrados: A=${idxA}, B=${idxB}`);
+      return res.status(404).json({ error: 'Uno o ambos posits no encontrados' });
+    }
+
+    console.log(`[swapPosits] Intercambiando ${positIdA} (${idxA}) con ${positIdB} (${idxB})`);
+
+    // Intercambiar órdenes
+    board.posits[idxA].posicion.orden = ordenA;
+    board.posits[idxB].posicion.orden = ordenB;
+
+    board.markModified('posits');
+    await board.save();
+
+    // 🔥 SOCKET
+    emitirActualizacion(req, boardId, 'swapPosits');
+
+    res.json({ message: 'Posits intercambiados correctamente' });
+  } catch (error: any) {
+    console.error('[swapPosits] ERROR CRÍTICO:', error);
+    res.status(500).json({
+      error: 'Error intercambiando posits',
+      details: error.message,
+      stack: error.stack
+    });
   }
 };
 

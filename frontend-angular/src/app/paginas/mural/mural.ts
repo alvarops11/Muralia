@@ -113,6 +113,8 @@ export class Mural implements OnInit, OnDestroy {
   dragPending: string | null = null; // posit esperando permiso
   dragBlockedByOthers = new Set<string>(); // posits bloqueados por otros
   dragCurrentPosit: any = null; // posit actual siendo arrastrado
+  cooldownMovimiento = false; // Cooldown de 1s entre movimientos
+  hoveredPositId: string | null = null; // ID del posit sobre el que estamos planeando soltar
 
   // -- Control de Sockets y Ghosts --
   wsSubscription?: Subscription;
@@ -468,6 +470,34 @@ export class Mural implements OnInit, OnDestroy {
 
     // Obtenemos coordenadas absolutas del ratón
     const { x, y } = event.pointerPosition;
+
+    // DETECCIÓN DE HOVER (Para el Swap Estricto)
+    // El .cdk-drag-preview DEBE tener pointer-events: none en CSS
+    const elementUnder = document.elementFromPoint(x, y);
+
+    // Debug logging (Solo para desarrollo)
+    // console.log('Element under mouse:', elementUnder);
+
+    // Buscamos si el elemento debajo es otro posit
+    const positElement = elementUnder?.closest('.note');
+    if (positElement) {
+      const targetId = positElement.getAttribute('data-posit-id');
+      if (targetId && targetId !== posit.posit_id) {
+        if (this.hoveredPositId !== targetId) {
+          console.log('🎯 Hover sobre posit:', targetId);
+          this.hoveredPositId = targetId;
+          this.cd.detectChanges();
+        }
+      } else {
+        this.hoveredPositId = null;
+      }
+    } else {
+      if (this.hoveredPositId) {
+        this.hoveredPositId = null;
+        this.cd.detectChanges();
+      }
+    }
+
     // Emitimos al Subject (que controla la frecuencia de envío)
     this.dragSubject.next({
       positId: posit.posit_id,
@@ -483,26 +513,64 @@ export class Mural implements OnInit, OnDestroy {
     // Limpiar permisos locales
     this.dragPermissions.delete(posit.posit_id);
     this.dragPending = null;
-    this.dragCurrentPosit = null;
+    // No limpiamos dragCurrentPosit ni hoveredPositId aquí porque soltar() los necesita
   }
 
   // Se dispara al completar el drop (Guardar en BD)
   soltar(event: CdkDragDrop<any[]>) {
-    moveItemInArray(this.board.posits, event.previousIndex, event.currentIndex);
+    console.log('📦 Soltado. Target hovered:', this.hoveredPositId);
 
-    const posit = this.board.posits[event.currentIndex];
-    const nuevoOrden = event.currentIndex;
+    const targetId = this.hoveredPositId;
+    const currentPosit = this.dragCurrentPosit;
+
+    // Limpieza diferida
+    this.hoveredPositId = null;
+    this.dragCurrentPosit = null;
+
+    if (!targetId || !currentPosit) {
+      if (currentPosit) this.alSoltarDrag(currentPosit);
+      return;
+    }
+
+    const indexA = event.previousIndex;
+    const indexB = this.board.posits.findIndex((p: any) => p.posit_id === targetId);
+
+    console.log(`🔄 Swapping index ${indexA} with ${indexB}`);
+
+    if (indexB === -1 || indexA === indexB) {
+      if (currentPosit) this.alSoltarDrag(currentPosit);
+      return;
+    }
+
+    // Activar cooldown inmediatamente al soltar
+    this.cooldownMovimiento = true;
+    setTimeout(() => {
+      this.cooldownMovimiento = false;
+      this.cd.detectChanges();
+    }, 1000);
+
+    const posits = [...this.board.posits];
+    const positA = posits[indexA];
+    const positB = posits[indexB];
+
+    // Intercambiar posiciones localmente
+    posits[indexA] = positB;
+    posits[indexB] = positA;
+    this.board.posits = posits;
 
     // Aseguramos enviar señal de stop
-    this.alSoltarDrag(posit);
+    this.alSoltarDrag(positA);
 
     if (this.id) {
-      this.api.updatePosit(this.id, posit.posit_id, {
-        orden: nuevoOrden,
+      this.api.swapPosits(this.id, {
+        positIdA: positA.posit_id,
+        positIdB: targetId,
+        ordenA: indexB, // Nuevo orden de A es la posición de B
+        ordenB: indexA, // Nuevo orden de B es la posición de A
         ...(this.auth.getUserId() ? {} : { guestId: this.getGuestData()?.guestId })
       }).subscribe({
-        next: () => console.log("Guardado"),
-        error: () => { this.notify.error("Error al guardar la posición"); this.cargar(); }
+        next: () => console.log("Intercambio guardado"),
+        error: () => { this.notify.error("Error al intercambiar posiciones"); this.cargar(); }
       });
     }
   }

@@ -200,11 +200,12 @@
         </div>
 
         <div *ngIf="board" class="notes-grid" cdkDropList cdkDropListOrientation="mixed"
-            (cdkDropListDropped)="soltar($event)">
+            [cdkDropListSortingDisabled]="true" (cdkDropListDropped)="soltar($event)">
 
             <div *ngFor="let posit of board.posits" class="note" [class.yellow]="posit.color === '#fef3c7'"
-                [style.background-color]="posit.color" cdkDrag cdkDragHandle [attr.data-posit-id]="posit.posit_id"
-                [cdkDragDisabled]="!canEdit() || dragBlockedByOthers.has(posit.posit_id)"
+                [class.drop-target]="hoveredPositId === posit.posit_id" [style.background-color]="posit.color" cdkDrag
+                cdkDragHandle [attr.data-posit-id]="posit.posit_id"
+                [cdkDragDisabled]="!canEdit() || dragBlockedByOthers.has(posit.posit_id) || cooldownMovimiento"
                 (cdkDragStarted)="alEmpezarDrag(posit)" (cdkDragMoved)="alMoverDrag($event, posit)"
                 (cdkDragEnded)="alSoltarDrag(posit)" [class.being-moved-remote]="ghosts[posit.posit_id]">
 

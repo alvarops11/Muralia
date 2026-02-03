@@ -43,3 +43,10 @@ export const updateBoardSchema = z.object({
 export const addCommentSchema = z.object({
   contenido: z.string().min(1, "El comentario no puede estar vacío")
 });
+
+export const swapPositsSchema = z.object({
+  positIdA: z.string(),
+  positIdB: z.string(),
+  ordenA: z.number(),
+  ordenB: z.number()
+});

@@ -20,6 +20,9 @@ export class ApiService {
   }
   createBoard(data: any) { return this.http.post(this.apiUrl, data); }
   deleteBoard(id: string) { return this.http.delete(`${this.apiUrl}/${id}`); }
+  swapPosits(boardId: string, data: any) {
+    return this.http.post(`${this.apiUrl}/${boardId}/swap`, data);
+  }
 
   // --- POSITS ---
   createPosit(boardId: string, data: any) { return this.http.post(`${this.apiUrl}/${boardId}/posits`, data); }

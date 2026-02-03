@@ -2,7 +2,7 @@
 import { Router } from 'express';
 import {
   createBoard, getMyBoards, getBoardById, updateBoard, deleteBoard,
-  addPosit, updatePosit, deletePosit,
+  addPosit, updatePosit, deletePosit, swapPosits,
   addComment, deleteComment, // <--- NUEVO
   inviteUser, removeParticipant, // <--- NUEVO
   uploadFileToPosit, deleteFileFromPosit, // <--- NUEVO
@@ -27,6 +27,7 @@ router.post('/:boardId/join', optionalAuth, joinBoardViaLink);
 // --- POSITS ---
 router.post('/:boardId/posits', optionalAuth, addPosit);
 router.put('/:boardId/posits/:positId', optionalAuth, updatePosit);
+router.post('/:boardId/swap', optionalAuth, swapPosits);
 router.delete('/:boardId/posits/:positId', optionalAuth, deletePosit);
 router.post('/:boardId/posits/:positId/upload', optionalAuth, upload.single('archivo'), uploadFileToPosit); // <--- NUEVO
 router.delete('/:boardId/posits/:positId/file', optionalAuth, deleteFileFromPosit); // <--- NUEVO

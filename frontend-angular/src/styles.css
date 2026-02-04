@@ -2,14 +2,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap');
 
 :root {
-  --primary: #4f46e5;     /* Indigo bonito */
+  --primary: #4f46e5;
+  /* Indigo bonito */
   --primary-hover: #4338ca;
-  --bg-color: #f3f4f6;    /* Gris muy suave */
+  --bg-color: #f3f4f6;
+  /* Gris muy suave */
   --card-bg: #ffffff;
   --text-main: #1f2937;
   --text-muted: #6b7280;
   --danger: #ef4444;
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+
+  /* Breakpoints */
+  --mobile: 480px;
+  --tablet: 768px;
+  --desktop: 1024px;
 }
 
 body {
@@ -39,16 +46,37 @@ body {
   font-size: 0.9rem;
 }
 
-.btn-primary { background: var(--primary); color: white; }
-.btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+.btn-primary {
+  background: var(--primary);
+  color: white;
+}
 
-.btn-danger { background: var(--danger); color: white; }
-.btn-danger:hover { opacity: 0.9; }
+.btn-primary:hover {
+  background: var(--primary-hover);
+  transform: translateY(-1px);
+}
 
-.btn-ghost { background: transparent; color: var(--text-muted); }
-.btn-ghost:hover { color: var(--danger); background: #fee2e2; }
+.btn-danger {
+  background: var(--danger);
+  color: white;
+}
 
-input, textarea {
+.btn-danger:hover {
+  opacity: 0.9;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text-muted);
+}
+
+.btn-ghost:hover {
+  color: var(--danger);
+  background: #fee2e2;
+}
+
+input,
+textarea {
   width: 100%;
   padding: 10px;
   border: 1px solid #d1d5db;
@@ -57,9 +85,48 @@ input, textarea {
   margin-bottom: 10px;
 }
 
-h1, h2, h3 { margin-top: 0; color: #111827; }
-a { text-decoration: none; color: inherit; }
+h1,
+h2,
+h3 {
+  margin-top: 0;
+  color: #111827;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+}
 
 /* --- ANIMACIONES --- */
-.fade-in { animation: fadeIn 0.3s ease-in; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.fade-in {
+  animation: fadeIn 0.3s ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* --- RESPONSIVE UTILITIES --- */
+@media (max-width: 768px) {
+  .container {
+    padding: 15px;
+  }
+
+  .hide-mobile {
+    display: none !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .show-mobile-only {
+    display: none !important;
+  }
+}

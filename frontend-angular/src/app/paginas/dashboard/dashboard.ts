@@ -9,8 +9,11 @@ import { NotificationService } from '../../services/notification.service';
 interface Board {
   _id: string;
   titulo: string;
+  descripcion?: string;
   privacidad: 'privado' | 'publico' | 'enlace-abierto';
   creador: string;
+  posits?: any[];
+  participantes?: any[];
 }
 
 @Component({
@@ -213,6 +216,11 @@ export class Dashboard implements OnInit {
 
   closeUserMenu() {
     this.showUserMenu = false;
+  }
+
+  getPrivacyLabel(privacidad: string): string {
+    if (privacidad === 'enlace-abierto') return 'Sin registro';
+    return 'Con email';
   }
 
   @HostListener('document:click', ['$event'])

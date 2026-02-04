@@ -87,9 +87,9 @@
 
 <!-- Modal de Búsqueda (Migrado) -->
 <div *ngIf="mostrarBuscar" class="modal-overlay-mural" (click)="cerrarBuscar()">
-    <div class="modal-popup-search" (click)="$event.stopPropagation()">
+    <div class="modal-wrapper-generic" (click)="$event.stopPropagation()">
         <app-buscar-posit [posits]="board?.posits" [board]="board" (cerrar)="cerrarBuscar()"
-            (irAlPosit)="navegarAPosit($event)"></app-buscar-posit>
+            (irAlPosit)="navegarAPosit($event)" style="width: 100%;"></app-buscar-posit>
         <!-- Botón Cerrar removido: ya hay X en el header -->
     </div>
 </div>
@@ -104,8 +104,7 @@
 
 <!-- Modal de Exportar -->
 <div *ngIf="mostrarExportar" class="modal-overlay-mural" (click)="cerrarExportar()">
-    <div style="width: 100%; max-width: 600px; display: flex; justify-content: center;"
-        (click)="$event.stopPropagation()">
+    <div class="modal-wrapper-generic" (click)="$event.stopPropagation()">
         <app-exportar [board]="board" (onClose)="cerrarExportar()" style="width: 100%;"></app-exportar>
     </div>
     <!-- Botón Cerrar removido: ya hay botón Cancelar en el footer -->
@@ -113,8 +112,7 @@
 
 <!-- Modal de Estadísticas -->
 <div *ngIf="mostrarEstadisticas" class="modal-overlay-mural" (click)="cerrarEstadisticas()">
-    <div style="width: 100%; max-width: 600px; display: flex; justify-content: center;"
-        (click)="$event.stopPropagation()">
+    <div class="modal-wrapper-generic" (click)="$event.stopPropagation()">
         <app-estadisticas [board]="board" (onClose)="cerrarEstadisticas()" style="width: 100%;"></app-estadisticas>
     </div>
 </div>
@@ -129,11 +127,21 @@
     </div>
 </div>
 
-<div class="app-layout" style="display: flex; height: 100vh; overflow: hidden;">
+<div class="app-layout" [class.sidebar-open-mobile]="mostrarSidebarMobile"
+    style="display: flex; height: 100vh; overflow: hidden;">
 
+    <!-- Botón Toggle Sidebar (Solo Mobile) -->
+    <button class="sidebar-toggle-mobile" (click)="toggleSidebarMobile()"
+        *ngIf="!mostrarLoginInvitado && !mostrarModal && !mostrarBuscar && !mostrarCompartir && !mostrarExportar && !mostrarEstadisticas">
+        <span *ngIf="!mostrarSidebarMobile">☰</span>
+        <span *ngIf="mostrarSidebarMobile">×</span>
+    </button>
+
+    <!-- Overlay para cerrar sidebar en mobile -->
+    <div class="sidebar-overlay-mobile" *ngIf="mostrarSidebarMobile" (click)="cerrarSidebarMobile()"></div>
 
     <!-- Sidebar con Equipo y Acciones -->
-    <aside class="sidebar">
+    <aside class="sidebar" [class.mobile-visible]="mostrarSidebarMobile">
         <!-- Logo Muralia Rediseñado -->
         <div class="muralia-logo-container">
             <span class="muralia-logo-text">Muralia</span>

@@ -72,14 +72,36 @@
     <!-- Boards grid -->
     <div class="cards-grid" *ngIf="filteredBoards.length > 0">
         <div *ngFor="let board of filteredBoards" class="card active-project" (click)="navigateToBoard(board._id)">
-            <div>
-                <div class="project-title">{{ board.titulo }}</div>
-                <span class="badge" [class.badge-public]="board.privacidad === 'publico'">
-                    {{ board.privacidad === 'publico' ? 'PÚBLICO' : 'PRIVADO' }}
-                </span>
+            <div class="card-header-project">
+                <div class="project-icon-branded">
+                    <span class="m-logo">M</span>
+                    <div class="m-dot"></div>
+                </div>
+                <div class="project-info-top">
+                    <div class="project-title">{{ board.titulo }}</div>
+                    <div class="project-description" *ngIf="board.descripcion">{{ board.descripcion }}</div>
+                    <div class="project-description italic" *ngIf="!board.descripcion">Sin descripción...</div>
+                </div>
             </div>
-            <div class="card-footer">
-                <span class="delete-icon" (click)="deleteBoard(board, $event)">🗑️</span>
+
+            <div class="card-stats">
+                <div class="stat-item">
+                    <span class="stat-value">{{ board.posits?.length || 0 }}</span>
+                    <span class="stat-label">Notas</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-value">{{ board.participantes?.length || 0 }}</span>
+                    <span class="stat-label">Miembros</span>
+                </div>
+            </div>
+
+            <div class="card-footer-project">
+                <span class="badge" [class.badge-public]="board.privacidad !== 'privado'">
+                    {{ getPrivacyLabel(board.privacidad) }}
+                </span>
+                <button class="delete-btn-minimal" (click)="deleteBoard(board, $event)" title="Eliminar mural">
+                    🗑️
+                </button>
             </div>
         </div>
     </div>

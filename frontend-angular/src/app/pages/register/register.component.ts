@@ -151,6 +151,18 @@ import { NotificationService } from '../../services/notification.service';
     .login-footer p { color: #6b7280; margin: 0; font-size: 0.9rem; }
     .login-footer a { color: #4f46e5; text-decoration: none; font-weight: 600; }
     .login-footer a:hover { text-decoration: underline; }
+
+    @media (max-width: 480px) {
+        .login-card { 
+            padding: 1.5rem; 
+            border-radius: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        .login-wrapper { background: white; }
+    }
   `]
 })
 export class RegisterComponent {

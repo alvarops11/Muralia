@@ -969,6 +969,22 @@ body {
     animation: fadeIn 0.3s ease;
 }
 
+@media (max-width: 768px) {
+    .modal-wrapper-generic {
+        width: 95% !important;
+        max-width: 95% !important;
+        margin: 10px !important;
+    }
+}
+
+.modal-wrapper-generic {
+    width: 100%;
+    max-width: 600px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 .modal-popup-mural {
     background: white;
     border-radius: 20px;
@@ -1199,6 +1215,15 @@ body {
     position: relative;
 }
 
+@media (max-width: 480px) {
+    .modal-popup-search {
+        width: 100% !important;
+        border-radius: 0 !important;
+        height: 100% !important;
+        max-width: 100% !important;
+    }
+}
+
 .btn-close-search {
     position: absolute;
     top: 15px;
@@ -1265,7 +1290,7 @@ body {
 .comments-panel {
     position: fixed;
     top: 0;
-    right: -400px;
+    right: -100%;
     width: 400px;
     height: 100vh;
     background: white;
@@ -1725,4 +1750,159 @@ body {
     margin-top: 24px !important;
     opacity: 0.7 !important;
     margin-bottom: 0 !important;
+}
+
+@media (max-width: 480px) {
+    .modal-popup-guest {
+        width: 95% !important;
+        padding: 25px 20px !important;
+    }
+
+    .guest-header {
+        margin-bottom: 20px !important;
+    }
+
+    .guest-body h3 {
+        font-size: 20px !important;
+    }
+}
+
+/* --- RESPONSIVE MURAL --- */
+
+/* Hamburguesa / Toggle */
+.sidebar-toggle-mobile {
+    display: none;
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    left: auto;
+    top: auto;
+    z-index: 1100;
+    background: #5570f1;
+    color: white;
+    border: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 24px;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.4);
+    cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+    .sidebar-toggle-mobile {
+        display: flex;
+    }
+
+    .sidebar {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        height: 100vh;
+        z-index: 1050;
+        transform: translateX(-100%);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-shadow: 20px 0 50px rgba(0, 0, 0, 0.1);
+        width: 280px;
+    }
+
+    .sidebar.mobile-visible {
+        transform: translateX(0);
+    }
+
+    .sidebar-overlay-mobile {
+        position: fixed;
+        inset: 0;
+        background: rgba(15, 23, 42, 0.5);
+        backdrop-filter: blur(4px);
+        z-index: 1040;
+        animation: fadeIn 0.3s ease;
+    }
+
+    .board-area {
+        padding: 80px 20px 20px 20px;
+    }
+
+    .notes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+        gap: 15px;
+    }
+}
+
+@media (max-width: 768px) {
+    .notes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 12px;
+    }
+
+    .note {
+        padding: 15px;
+        min-height: 160px;
+    }
+
+    .note-title {
+        font-size: 1rem;
+    }
+
+    .note-subtitle {
+        font-size: 12px;
+        margin-bottom: 15px;
+    }
+
+    .modal-popup-mural {
+        width: 95%;
+        margin: 10px;
+        padding: 0;
+        max-height: 90vh;
+        overflow-y: auto;
+    }
+
+    .modal-header-creation {
+        padding: 15px 20px;
+    }
+
+    .modal-header-creation h2 {
+        font-size: 1.25rem;
+    }
+
+    .modal-body-creation {
+        padding: 20px;
+    }
+
+    .comments-panel {
+        width: 100%;
+        max-width: none;
+    }
+}
+
+@media (max-width: 480px) {
+    .notes-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 10px;
+    }
+
+    .note {
+        min-height: 140px;
+        padding: 12px;
+    }
+
+    .note-title {
+        font-size: 0.85rem;
+    }
+
+    .note-subtitle {
+        font-size: 11px;
+    }
+
+    .btn-comment {
+        font-size: 0.7rem;
+        padding: 6px 8px;
+    }
+
+    .board-header-info h1 {
+        font-size: 20px;
+    }
 }

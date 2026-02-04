@@ -1,8 +1,9 @@
 .modal-container {
     background-color: white;
     width: 100%;
+    margin: 0 auto;
     max-width: 550px;
-    min-width: 450px;
+    min-width: 300px;
     border-radius: 20px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     overflow: hidden;

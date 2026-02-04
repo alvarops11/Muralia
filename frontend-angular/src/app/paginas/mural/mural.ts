@@ -140,6 +140,18 @@ export class Mural implements OnInit, OnDestroy {
     }
   }
 
+  mostrarSidebarMobile = false;
+
+  toggleSidebarMobile() {
+    this.mostrarSidebarMobile = !this.mostrarSidebarMobile;
+    this.cd.detectChanges();
+  }
+
+  cerrarSidebarMobile() {
+    this.mostrarSidebarMobile = false;
+    this.cd.detectChanges();
+  }
+
   escucharCambios() {
     if (this.isListening) return;
     this.isListening = true;
@@ -615,6 +627,7 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   abrirModal() {
+    this.cerrarSidebarMobile();
     this.mostrarModal = true;
     this.isEditing = false;
     this.editPositId = null;
@@ -936,6 +949,7 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   abrirBuscar() {
+    this.cerrarSidebarMobile();
     this.mostrarBuscar = true;
   }
 
@@ -944,6 +958,7 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   abrirCompartir() {
+    this.cerrarSidebarMobile();
     this.mostrarCompartir = true;
   }
 
@@ -952,6 +967,7 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   abrirExportar() {
+    this.cerrarSidebarMobile();
     this.mostrarExportar = true;
   }
 
@@ -960,6 +976,7 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   abrirEstadisticas() {
+    this.cerrarSidebarMobile();
     this.mostrarEstadisticas = true;
   }
 

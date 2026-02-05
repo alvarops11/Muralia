@@ -113,6 +113,8 @@ export class Mural implements OnInit, OnDestroy {
   dragPending: string | null = null; // posit esperando permiso
   dragBlockedByOthers = new Set<string>(); // posits bloqueados por otros
   dragCurrentPosit: any = null; // posit actual siendo arrastrado
+  waitingForLock: string | null = null; // posit que estamos intentando bloquear
+  pendingDrop: { posit: any, targetId: string | null } | null = null; // Swap esperando permiso
   cooldownMovimiento = false; // Cooldown de 1s entre movimientos
   hoveredPositId: string | null = null; // ID del posit sobre el que estamos planeando soltar
 
@@ -201,6 +203,15 @@ export class Mural implements OnInit, OnDestroy {
         console.log('✅ Permiso de drag concedido para posit:', data.positId);
         this.dragPermissions.add(data.positId);
         this.dragPending = null;
+        this.waitingForLock = null;
+
+        // Si teníamos un drop pendiente esperando este permiso, lo ejecutamos ahora
+        if (this.pendingDrop && this.pendingDrop.posit.posit_id === data.positId) {
+          console.log('📦 Ejecutando drop BUFEREADO para:', data.positId);
+          this.ejecutarSwap(this.pendingDrop.posit, this.pendingDrop.targetId);
+          this.pendingDrop = null;
+        }
+
         this.cd.detectChanges();
       })
     );
@@ -208,9 +219,20 @@ export class Mural implements OnInit, OnDestroy {
     this.subs.push(
       this.wsService.onDragDenied().subscribe((data: any) => {
         console.warn('❌ Permiso de drag denegado para posit:', data.positId);
+
         this.dragPending = null;
-        this.notify.error('Otro usuario está moviendo este posit');
-        this.cd.detectChanges();
+        this.waitingForLock = null;
+        this.pendingDrop = null;
+        if (data.positId) this.dragPermissions.delete(data.positId);
+
+        // NUCLEAR RESET: Eliminamos físicamente el posit por unos ms para matar la sesión de drag
+        if (data.positId) {
+          this.forzarResetPosit(data.positId);
+        }
+
+        setTimeout(() => {
+          this.notify.error('No puedes mover este posit: otro usuario ha ganado el pulso 🏁');
+        });
       })
     );
 
@@ -224,9 +246,24 @@ export class Mural implements OnInit, OnDestroy {
 
     this.subs.push(
       this.wsService.onDragReleased().subscribe((data: any) => {
-        console.log('🔓 Posit liberado:', data.positId);
+        console.log('🔓 Posit liberado por servidor:', data.positId);
         this.dragBlockedByOthers.delete(data.positId);
-        this.dragPermissions.delete(data.positId);
+
+        // No borramos de permisos si YO soy quien lo está moviendo
+        // de lo contrario soltar() fallará por falta de permiso
+        if (this.dragCurrentPosit?.posit_id !== data.positId) {
+          this.dragPermissions.delete(data.positId);
+        } else {
+          // Si yo sigo "agarrándolo" (race condition), lo borramos en un rato 
+          // para dejar que soltar() termine su trabajo
+          setTimeout(() => {
+            if (this.dragCurrentPosit?.posit_id !== data.positId) {
+              this.dragPermissions.delete(data.positId);
+              this.cd.detectChanges();
+            }
+          }, 300);
+        }
+
         this.cd.detectChanges();
       })
     );
@@ -453,30 +490,34 @@ export class Mural implements OnInit, OnDestroy {
 
   // --- EVENTOS DRAG LOCALES (CON SISTEMA AUTORITATIVO) ---
 
-  // CRÍTICO: Solicitar permiso ANTES de permitir el drag
+  /**
+   * PASO 1: Empezar el drag. Solicitamos el bloqueo al servidor.
+   * El usuario ya está moviendo el posit (optimista).
+   */
   alEmpezarDrag(posit: any) {
     if (!this.id) return;
+    this.dragCurrentPosit = posit;
 
-    // Verificar si el posit está bloqueado por otro usuario
-    if (this.dragBlockedByOthers.has(posit.posit_id)) {
-      this.notify.error('Otro usuario está moviendo este posit');
+    // Si ya tenemos el permiso, no pedimos nada
+    if (this.dragPermissions.has(posit.posit_id)) {
+      console.log('🚀 Drag continuado (ya tenía permiso):', posit.posit_id);
       return;
     }
 
-    // Solicitar permiso al servidor
-    const userId = this.auth.getUserId() || this.getGuestData()?.guestId || 'guest';
+    console.log('⏳ Solicitando permiso de drag (inicio optimista) para:', posit.posit_id);
+    this.waitingForLock = posit.posit_id;
     this.dragPending = posit.posit_id;
-    this.dragCurrentPosit = posit;
-    this.wsService.requestDrag(this.id, posit.posit_id, userId);
 
-    console.log('🔑 Solicitando permiso de drag para posit:', posit.posit_id);
+    const userId = this.auth.getUserId() || this.getGuestData()?.guestId || 'guest';
+    this.wsService.requestDrag(this.id, posit.posit_id, userId);
+    this.cd.detectChanges();
   }
 
   // Se dispara mientras arrastro (Angular CDK)
   alMoverDrag(event: CdkDragMove, posit: any) {
-    // VALIDACIÓN CRÍTICA: Solo emitir si tenemos permiso concedido
+    // Si aún no tenemos permiso, no enviamos señal de movimiento al servidor
+    // ni calculamos el hover para evitar swaps fantasmas
     if (!this.dragPermissions.has(posit.posit_id)) {
-      console.warn('⚠️ Intento de mover sin permiso, ignorando:', posit.posit_id);
       return;
     }
 
@@ -496,7 +537,7 @@ export class Mural implements OnInit, OnDestroy {
       const targetId = positElement.getAttribute('data-posit-id');
       if (targetId && targetId !== posit.posit_id) {
         if (this.hoveredPositId !== targetId) {
-          console.log('🎯 Hover sobre posit:', targetId);
+          console.log(`🎯 Hover sobre posit: ${targetId} (prev: ${this.hoveredPositId})`);
           this.hoveredPositId = targetId;
           this.cd.detectChanges();
         }
@@ -520,12 +561,12 @@ export class Mural implements OnInit, OnDestroy {
 
   // Se dispara al soltar (antes de guardar)
   alSoltarDrag(posit: any) {
+    console.log('🏁 Arrante local terminado para:', posit.posit_id);
     if (this.id) this.wsService.emitStopDrag(this.id, posit.posit_id);
 
-    // Limpiar permisos locales
-    this.dragPermissions.delete(posit.posit_id);
+    // IMPORTANTE: No borramos de permisos aquí, 
+    // dejamos que onDragReleased o soltar() lo hagan
     this.dragPending = null;
-    // No limpiamos dragCurrentPosit ni hoveredPositId aquí porque soltar() los necesita
   }
 
   // Se dispara al completar el drop (Guardar en BD)
@@ -535,24 +576,50 @@ export class Mural implements OnInit, OnDestroy {
     const targetId = this.hoveredPositId;
     const currentPosit = this.dragCurrentPosit;
 
-    // Limpieza diferida
+    // Limpieza de feedback visual inmediata
     this.hoveredPositId = null;
     this.dragCurrentPosit = null;
 
-    if (!targetId || !currentPosit) {
-      if (currentPosit) this.alSoltarDrag(currentPosit);
+    if (!currentPosit) return;
+
+    // CASO A: Ya tenemos permiso -> Ejecutar ya
+    if (this.dragPermissions.has(currentPosit.posit_id)) {
+      this.ejecutarSwap(currentPosit, targetId);
       return;
     }
 
-    const indexA = event.previousIndex;
+    // CASO B: Estamos esperando permiso -> Buferear
+    if (this.dragPending === currentPosit.posit_id) {
+      console.log('⏳ Drop bufereado (esperando permiso del servidor):', currentPosit.posit_id);
+      this.pendingDrop = { posit: currentPosit, targetId: targetId };
+      return;
+    }
+
+    // CASO C: No tenemos permiso y no lo hemos pedido -> Abortar
+    console.warn('❌ Drop abortado: No hay autorización para', currentPosit.posit_id);
+    this.alSoltarDrag(currentPosit);
+
+    // Nuclear Reset para asegurar que el posit vuelve a su sitio al instante
+    this.forzarResetPosit(currentPosit.posit_id);
+  }
+
+  // Lógica compartida de intercambio
+  ejecutarSwap(positA: any, targetId: string | null) {
+    if (!targetId) {
+      this.alSoltarDrag(positA);
+      return;
+    }
+
+    const indexA = this.board.posits.findIndex((p: any) => p.posit_id === positA.posit_id);
     const indexB = this.board.posits.findIndex((p: any) => p.posit_id === targetId);
 
-    console.log(`🔄 Swapping index ${indexA} with ${indexB}`);
-
-    if (indexB === -1 || indexA === indexB) {
-      if (currentPosit) this.alSoltarDrag(currentPosit);
+    if (indexA === -1 || indexB === -1 || indexA === indexB) {
+      console.warn('📦 Swap cancelado: Posiciones inválidas', { indexA, indexB });
+      this.alSoltarDrag(positA);
       return;
     }
+
+    console.log(`🔄 Ejecutando Swap: ${positA.posit_id} <-> ${targetId}`);
 
     // Activar cooldown inmediatamente al soltar
     this.cooldownMovimiento = true;
@@ -562,27 +629,43 @@ export class Mural implements OnInit, OnDestroy {
     }, 1000);
 
     const posits = [...this.board.posits];
-    const positA = posits[indexA];
-    const positB = posits[indexB];
+    const itemA = posits[indexA];
+    const itemB = posits[indexB];
 
-    // Intercambiar posiciones localmente
-    posits[indexA] = positB;
-    posits[indexB] = positA;
+    // Obtenemos los órdenes actuales para intercambiarlos
+    const ordenA = itemA.posicion?.orden || 0;
+    const ordenB = itemB.posicion?.orden || 0;
+
+    // Intercambiar posiciones localmente en el array
+    posits[indexA] = itemB;
+    posits[indexB] = itemA;
     this.board.posits = posits;
 
     // Aseguramos enviar señal de stop
-    this.alSoltarDrag(positA);
+    this.alSoltarDrag(itemA);
 
     if (this.id) {
-      this.api.swapPosits(this.id, {
-        positIdA: positA.posit_id,
+      console.log('📡 Enviando swap al servidor...', {
+        positIdA: itemA.posit_id,
         positIdB: targetId,
-        ordenA: indexB, // Nuevo orden de A es la posición de B
-        ordenB: indexA, // Nuevo orden de B es la posición de A
+        ordenA: ordenB,
+        ordenB: ordenA
+      });
+      this.api.swapPosits(this.id, {
+        positIdA: itemA.posit_id,
+        positIdB: targetId,
+        ordenA: ordenB,
+        ordenB: ordenA,
         ...(this.auth.getUserId() ? {} : { guestId: this.getGuestData()?.guestId })
       }).subscribe({
-        next: () => console.log("Intercambio guardado"),
-        error: () => { this.notify.error("Error al intercambiar posiciones"); this.cargar(); }
+        next: () => console.log("✅ Intercambio guardado en BD"),
+        error: (err) => {
+          console.error("❌ Error al intercambiar:", err);
+          setTimeout(() => {
+            this.notify.error("Error al intercambiar posiciones");
+          });
+          this.cargar();
+        }
       });
     }
   }
@@ -683,6 +766,8 @@ export class Mural implements OnInit, OnDestroy {
   }
 
   cerrarModal() {
+    if (this.guardandoPosit || this.subiendoArchivo) return;
+
     if (this.isEditing && this.id && this.editPositId) {
       this.wsService.emitUnlock(this.id, this.editPositId);
     }
@@ -715,7 +800,13 @@ export class Mural implements OnInit, OnDestroy {
           this.guardandoPosit = false;
           const pid = this.editPositId!;
           this.wsService.emitUnlock(this.id!, pid); // Desbloqueamos
-          this.cerrarModal();
+
+          // Cerramos primero para flujo más rápido visualmente
+          this.mostrarModal = false;
+          this.isEditing = false;
+          this.editPositId = null;
+          this.limpiarTimers();
+
           this.cargar(true);
         },
         error: () => {
@@ -738,8 +829,11 @@ export class Mural implements OnInit, OnDestroy {
       }).subscribe({
         next: () => {
           this.guardandoPosit = false;
-          this.cerrarModal();
+
+          // Cerramos primero
+          this.mostrarModal = false;
           this.cd.detectChanges();
+
           this.cargar(true); // Recarga silenciosa para no bloquear
         },
         error: () => {
@@ -1008,6 +1102,33 @@ export class Mural implements OnInit, OnDestroy {
     const gid = 'guest_' + Math.random().toString(36).substr(2, 9);
     localStorage.setItem('muralia_guest', JSON.stringify({ nombre: this.nombreInvitado, guestId: gid }));
     this.unirseComoInvitado(this.nombreInvitado, gid);
+  }
+
+  // Estabilidad del DOM para evitar interrupciones en el drag
+  trackByPositId(index: number, item: any): string {
+    return item.posit_id || index;
+  }
+
+  /**
+   * NUCLEAR RESET (Plan J):
+   * Elimina físicamente el posit del array por unos milisegundos.
+   * Esto obliga a Angular a DESTRUIR el elemento del DOM y matar cualquier sesión de arrastre.
+   */
+  forzarResetPosit(positId: string) {
+    if (!this.board || !positId) return;
+
+    const index = this.board.posits.findIndex((p: any) => p.posit_id === positId);
+    if (index !== -1) {
+      console.log('☢️ Aplicando Nuclear Reset a:', positId);
+      const positBackup = this.board.posits[index];
+      this.board.posits.splice(index, 1);
+      this.cd.detectChanges();
+
+      setTimeout(() => {
+        this.board.posits.splice(index, 0, positBackup);
+        this.cd.detectChanges();
+      }, 50);
+    }
   }
 
   unirseComoInvitado(nombre: string, guestId: string) {

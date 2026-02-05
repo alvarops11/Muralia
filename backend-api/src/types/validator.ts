@@ -13,7 +13,7 @@ export const createBoardSchema = z.object({
 
 // Esquema para añadir un Posit
 export const createPositSchema = z.object({
-  titulo: z.string().min(1),
+  titulo: z.string().min(1).max(50, "El título no puede superar los 50 caracteres"),
   contenido: z.string().optional(),
   color: z.string().optional(),
   orden: z.number().optional().default(0) // Simplificado: el orden directo
@@ -21,7 +21,7 @@ export const createPositSchema = z.object({
 
 // Esquema para ACTUALIZAR (Update)
 export const updatePositSchema = z.object({
-  titulo: z.string().min(1).optional(),
+  titulo: z.string().min(1).max(50, "El título no puede superar los 50 caracteres").optional(),
   contenido: z.string().optional(),
   color: z.string().optional(),
   orden: z.number().optional(), // Aquí recibimos el nuevo orden

@@ -465,6 +465,15 @@ body {
     transform: translateX(0);
 }
 
+/* Fix para móviles: Mostrar siempre el botón de borrar en dispositivos táctiles */
+@media (hover: none),
+(max-width: 768px) {
+    .delete-btn-minimal {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
 .delete-btn-minimal:hover {
     background: #ef4444;
     color: white;

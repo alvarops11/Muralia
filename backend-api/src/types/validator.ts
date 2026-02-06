@@ -41,7 +41,7 @@ export const updateBoardSchema = z.object({
 
 // Validar comentario nuevo
 export const addCommentSchema = z.object({
-  contenido: z.string().min(1, "El comentario no puede estar vacío")
+  contenido: z.string().min(1, "El comentario no puede estar vacío").max(1000, "El comentario no puede superar los 1000 caracteres")
 });
 
 export const swapPositsSchema = z.object({

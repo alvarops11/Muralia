@@ -99,6 +99,7 @@ export class Mural implements OnInit, OnDestroy {
   editPositId: string | null = null;
   nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
   coloresDisponibles = ['#fef3c7', '#a5f3fc', '#fbcfe8', '#bbf7d0', '#fed7aa'];
+  archivoTemporal: File | null = null; // Archivo seleccionado antes de crear el posit (Plan K)
 
   // Timers para el modo edición
   editTimer: any = null;
@@ -729,6 +730,7 @@ export class Mural implements OnInit, OnDestroy {
     this.mostrarModal = true;
     this.isEditing = false;
     this.editPositId = null;
+    this.archivoTemporal = null; // Limpiar buffer de archivos (Plan K)
     this.nuevoPosit = { titulo: '', contenido: '', color: '#fef3c7' };
   }
 
@@ -842,14 +844,34 @@ export class Mural implements OnInit, OnDestroy {
         // Si no hay usuario logueado, mandamos datos de invitado para autoría
         ...(this.auth.getUserId() ? {} : { nombre: guestData?.nombre, guestId: guestData?.guestId })
       }).subscribe({
-        next: () => {
+        next: (res: any) => {
           this.guardandoPosit = false;
+
+          // PLAN K: Si hay un archivo en el "buffer", lo subimos ahora que tenemos ID
+          const nuevoId = res.posit?.posit_id;
+          if (this.archivoTemporal && nuevoId) {
+            console.log('📤 Subiendo archivo almacenado en buffer para nueva nota:', nuevoId);
+            this.subiendoArchivo = true;
+            this.api.uploadFile(this.id!, nuevoId, this.archivoTemporal).subscribe({
+              next: () => {
+                this.subiendoArchivo = false;
+                this.archivoTemporal = null;
+                this.notify.success("Nota creada con archivo adjunto.");
+                this.cargar(true);
+              },
+              error: () => {
+                this.subiendoArchivo = false;
+                this.notify.error("Nota creada, pero hubo un error al subir el archivo.");
+                this.cargar(true);
+              }
+            });
+          } else {
+            this.cargar(true); // Recarga silenciosa para no bloquear
+          }
 
           // Cerramos primero
           this.mostrarModal = false;
           this.cd.detectChanges();
-
-          this.cargar(true); // Recarga silenciosa para no bloquear
         },
         error: () => {
           this.notify.error("❌ Error al crear la nota. Inténtalo de nuevo.");
@@ -862,8 +884,17 @@ export class Mural implements OnInit, OnDestroy {
 
   alSeleccionarArchivo(event: any, positId: string | null) {
     const file = event.target.files[0];
-    if (!file || !this.id || !positId) return;
+    if (!file || !this.id) return;
 
+    // Si NO hay positId, estamos en modo CREACIÓN (Plan K)
+    if (!positId) {
+      console.log('🎨 Archivo seleccionado en modo creación, guardando en buffer:', file.name);
+      this.archivoTemporal = file;
+      this.cd.detectChanges();
+      return;
+    }
+
+    // Si HAY positId, subida directa (comportamiento original para Edición)
     this.subiendoArchivo = true;
     this.api.uploadFile(this.id, positId, file).subscribe({
       next: (res: any) => {
@@ -893,14 +924,12 @@ export class Mural implements OnInit, OnDestroy {
     }
   }
 
+  /**
+   * Abre el archivo en una pestaña nueva
+   */
   descargarArchivo(url: string, originalName: string) {
     const fullUrl = this.getFullUrl(url);
-    const link = document.createElement('a');
-    link.href = fullUrl;
-    link.download = originalName || 'archivo';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    window.open(fullUrl, '_blank');
   }
 
   getFullUrl(path: string): string {
@@ -945,6 +974,10 @@ export class Mural implements OnInit, OnDestroy {
   async comentar(pid: string) {
     const t = await this.notify.prompt("💬 ¿Qué quieres comentar?");
     if (t && this.id && this.board) {
+      if (t.length > 1000) {
+        this.notify.error("El comentario es demasiado largo (máximo 1000 caracteres)");
+        return;
+      }
       // Actualización optimista: agregar el comentario inmediatamente
       const posit = this.board.posits.find((p: any) => p.posit_id === pid);
       if (posit) {

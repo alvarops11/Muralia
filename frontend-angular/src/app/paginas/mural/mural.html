@@ -50,10 +50,14 @@
                 <span>🔗 Adjuntar archivo</span>
             </label>
             <input type="file" #fileInput style="display: none" (change)="alSeleccionarArchivo($event, editPositId)">
-            <button class="file-button-mural" (click)="fileInput.click()" [disabled]="!isEditing || subiendoArchivo">
+            <button class="file-button-mural" (click)="fileInput.click()" [disabled]="subiendoArchivo">
                 {{ subiendoArchivo ? 'Subiendo...' : 'Seleccionar archivo' }}
             </button>
-            <p *ngIf="!isEditing" class="info-text-mural">Primero guarda el post-it para adjuntar archivos.</p>
+            <div *ngIf="archivoTemporal" class="selected-file-badge">
+                📎 {{ archivoTemporal.name }}
+            </div>
+            <p *ngIf="!isEditing && !archivoTemporal" class="info-text-mural">Puedes adjuntar un archivo ahora o
+                después.</p>
 
             <div *ngIf="isEditing && nuevoPosit && board" class="current-attachment">
                 <div *ngFor="let p of board.posits">
@@ -65,8 +69,8 @@
                             <span class="attachment-name-modal">{{ p.archivoNombre }}</span>
                             <div class="attachment-actions-modal">
                                 <button class="btn-action-modal download"
-                                    (click)="descargarArchivo(p.archivoUrl, p.archivoNombre)">⬇️
-                                    Descargar</button>
+                                    (click)="descargarArchivo(p.archivoUrl, p.archivoNombre)">👁️
+                                    Ver archivo</button>
                                 <button class="btn-action-modal delete" (click)="borrarArchivo(editPositId)">🗑️
                                     Borrar</button>
                             </div>

@@ -10,9 +10,19 @@ const app = express();
 
 // --- Middlewares Globales ---
 app.use(helmet({
-  crossOriginResourcePolicy: { policy: "cross-origin" }
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginEmbedderPolicy: false,
 })); // Seguridad HTTP
-app.use(cors());   // Permitir peticiones externas
+
+// Configuración de CORS más explícita
+app.use(cors({
+  origin: '*', // Permitir todos los orígenes
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'X-Tunnel-Skip-Anti-Phishing-Threshold'],
+  credentials: true,
+  optionsSuccessStatus: 204
+}));
+
 app.use(express.json()); // Entender JSON en el body
 
 // Servir archivos estáticos (uploads)

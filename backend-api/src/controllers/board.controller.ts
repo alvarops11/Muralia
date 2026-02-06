@@ -149,18 +149,6 @@ export const addPosit = async (req: Request, res: Response) => {
       nombre_autor = nombre;
     }
 
-    const newPosit = {
-      posit_id: newPositId,
-      titulo: data.titulo,
-      contenido: data.contenido || '',
-      color: data.color || 'yellow',
-      posicion: { x: 0, y: 0, orden: data.orden || 0 },
-      autor_id,
-      nombre_autor,
-      fecha_creacion: new Date(),
-      comentarios: []
-    };
-
     // Seguridad: Verificar permisos (admin, editor o invitado registrado en el board)
     const boardQuery: any = { _id: boardId };
     if (user) {
@@ -168,18 +156,38 @@ export const addPosit = async (req: Request, res: Response) => {
         $elemMatch: { usuario_id: user._id, permiso: { $in: ['admin', 'editor'] } }
       };
     } else {
+      const { guestId } = req.body;
       boardQuery.participantes = {
-        $elemMatch: { guest_id: req.body.guestId, permiso: { $in: ['admin', 'editor'] } }
+        $elemMatch: { guest_id: guestId, permiso: { $in: ['admin', 'editor'] } }
       };
     }
 
-    const board = await Board.findOneAndUpdate(
-      boardQuery,
-      { $push: { posits: newPosit } },
-      { new: true }
-    );
+    const board = await Board.findOne(boardQuery);
+    if (!board) return res.status(404).json({ error: 'Tablero no encontrado o sin permisos' });
 
-    if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+    // CALCULAR EL PRÓXIMO ORDEN: el máximo actual + 1
+    const currentMaxOrder = board.posits.reduce((max, p) => {
+      const pOrder = p.posicion?.orden || 0;
+      return pOrder > max ? pOrder : max;
+    }, -1);
+
+    const nextOrder = currentMaxOrder + 1;
+
+    const newPosit = {
+      posit_id: newPositId,
+      titulo: data.titulo,
+      contenido: data.contenido || '',
+      color: data.color || 'yellow',
+      posicion: { x: 0, y: 0, orden: nextOrder },
+      autor_id,
+      nombre_autor,
+      fecha_creacion: new Date(),
+      comentarios: []
+    };
+
+    // Añadir y guardar
+    board.posits.push(newPosit as any);
+    await board.save();
 
     // Enviar respuesta HTTP primero para liberar al frontend
     res.status(201).json({ message: 'Posit añadido', posit: newPosit });
@@ -187,7 +195,8 @@ export const addPosit = async (req: Request, res: Response) => {
     // 🔥 SOCKET después
     emitirActualizacion(req, boardId, 'addPosit');
   } catch (error: any) {
-    res.status(500).json({ error: error.errors || 'Error añadiendo posit' });
+    console.error('[addPosit] Error:', error);
+    res.status(500).json({ error: 'Error añadiendo posit', details: error.message });
   }
 };
 
@@ -312,9 +321,20 @@ export const swapPosits = async (req: Request, res: Response) => {
 
     console.log(`[swapPosits] Intercambiando ${positIdA} (${idxA}) con ${positIdB} (${idxB})`);
 
-    // Intercambiar órdenes
-    board.posits[idxA].posicion.orden = ordenA;
-    board.posits[idxB].posicion.orden = ordenB;
+    // Intercambiar en el array físico
+    const temp = board.posits[idxA];
+    board.posits[idxA] = board.posits[idxB];
+    board.posits[idxB] = temp;
+
+    // RE-NUMERACIÓN GLOBAL E IMPERATIVA
+    // Esto es lo más robusto: el orden en el array físico manda.
+    board.posits.forEach((p, i) => {
+      if (!p.posicion) {
+        p.posicion = { x: 0, y: 0, orden: i };
+      } else {
+        p.posicion.orden = i;
+      }
+    });
 
     board.markModified('posits');
     await board.save();
@@ -345,6 +365,28 @@ export const getBoardById = async (req: Request, res: Response) => {
       .populate('posits.comentarios.usuario_id', 'email');
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
+
+    // --- DATA HEALER: Corregir órdenes duplicados o colapsados en 0 ---
+    const ordenes = board.posits.map(p => p.posicion?.orden || 0);
+    const tieneDuplicados = new Set(ordenes).size !== ordenes.length;
+
+    if (tieneDuplicados && board.posits.length > 1) {
+      console.log(`[DataHealer] Re-indexando tablero ${boardId} por colisión de órdenes`);
+
+      // Intentamos preservar el orden que haya antes de re-indexar
+      board.posits.sort((a, b) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
+
+      board.posits.forEach((p, i) => {
+        if (!p.posicion) {
+          p.posicion = { x: 0, y: 0, orden: i };
+        } else {
+          p.posicion.orden = i;
+        }
+      });
+      board.markModified('posits');
+      await board.save();
+    }
+    // -----------------------------------------------------------------
 
     // Seguridad: Si es privado, solo participantes. Si es enlace-abierto o publico, cualquiera.
     const isParticipant = board.participantes.some(p => {

@@ -63,7 +63,7 @@ io.on('connection', (socket) => {
       console.log(`⏰ Timeout de drag para posit ${data.positId} en tablero ${data.boardId}`);
       dragLocks.delete(lockKey);
       io.to(data.boardId).emit('drag_liberado', { positId: data.positId });
-    }, 15000); // 15 segundos
+    }, 45000); // Aumentado a 45 segundos para evitar cortes prematuros
 
     dragLocks.set(lockKey, {
       userId: data.userId,

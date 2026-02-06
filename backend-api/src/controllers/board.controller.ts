@@ -366,16 +366,26 @@ export const getBoardById = async (req: Request, res: Response) => {
 
     if (!board) return res.status(404).json({ error: 'Tablero no encontrado' });
 
-    // --- DATA HEALER: Corregir órdenes duplicados o colapsados en 0 ---
-    const ordenes = board.posits.map(p => p.posicion?.orden || 0);
-    const tieneDuplicados = new Set(ordenes).size !== ordenes.length;
+    // --- DATA HEALER PRO: Corregir ordenación física y lógica ---
+    // 1. Detectar si el array está físicamente desordenado o tiene duplicados
+    const tieneDuplicados = new Set(board.posits.map(p => p.posicion?.orden || 0)).size !== board.posits.length;
 
-    if (tieneDuplicados && board.posits.length > 1) {
-      console.log(`[DataHealer] Re-indexando tablero ${boardId} por colisión de órdenes`);
+    // Comprobar si el orden físico coincide con el orden numérico
+    let estaDesordenadoFisicamente = false;
+    for (let i = 0; i < board.posits.length - 1; i++) {
+      if ((board.posits[i].posicion?.orden || 0) > (board.posits[i + 1].posicion?.orden || 0)) {
+        estaDesordenadoFisicamente = true;
+        break;
+      }
+    }
 
-      // Intentamos preservar el orden que haya antes de re-indexar
+    if ((tieneDuplicados || estaDesordenadoFisicamente) && board.posits.length > 0) {
+      console.log(`[DataHealer] Sincronizando orden físico/lógico del tablero ${boardId}`);
+
+      // Ordenar físicamente por la propiedad 'orden' que tengan
       board.posits.sort((a, b) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
 
+      // Re-indexar para limpiar duplicados y asegurar secuencia 0, 1, 2...
       board.posits.forEach((p, i) => {
         if (!p.posicion) {
           p.posicion = { x: 0, y: 0, orden: i };
@@ -383,8 +393,13 @@ export const getBoardById = async (req: Request, res: Response) => {
           p.posicion.orden = i;
         }
       });
+
       board.markModified('posits');
       await board.save();
+    } else {
+      // Si ya está sano, nos aseguramos de que el JSON que enviamos vaya ordenado
+      // (Mongoose a veces no garantiza el orden de salida si no es explícito)
+      board.posits.sort((a, b) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
     }
     // -----------------------------------------------------------------
 

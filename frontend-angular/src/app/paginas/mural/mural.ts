@@ -374,7 +374,22 @@ export class Mural implements OnInit, OnDestroy {
     const guestData = this.getGuestData();
     this.api.getBoard(this.id, guestData?.guestId).subscribe({
       next: (data) => {
-        data.posits.sort((a: any, b: any) => (a.posicion?.orden || 0) - (b.posicion?.orden || 0));
+        // --- ORDENACIÓN ROBUSTA Y ESTABLE ---
+        data.posits.sort((a: any, b: any) => {
+          const ordA = Number(a.posicion?.orden ?? 0);
+          const ordB = Number(b.posicion?.orden ?? 0);
+          if (ordA !== ordB) return ordA - ordB;
+          // Ordenación secundaria por ID para estabilidad total entre clientes
+          return (a.posit_id || "").localeCompare(b.posit_id || "");
+        });
+
+        // Si estamos arrastrando, no sobreescribimos el board entero para no romper el drag
+        // pero sí actualizamos los datos internos (como comentarios o textos) de forma silenciosa
+        if (this.dragCurrentPosit || this.waitingForLock) {
+          console.log("⏳ Refresco pospuesto: Drag en curso");
+          return;
+        }
+
         this.board = data;
         this.error = '';
 

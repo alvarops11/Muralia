@@ -1848,7 +1848,7 @@ body {
     right: 30px;
     left: auto;
     top: auto;
-    z-index: 1100;
+    z-index: 9999;
     background: #5570f1;
     color: white;
     border: none;
@@ -1860,6 +1860,20 @@ body {
     justify-content: center;
     box-shadow: 0 4px 12px rgba(85, 112, 241, 0.4);
     cursor: pointer;
+}
+
+/* Esto solo se activará si navegas con el teclado */
+.sidebar-toggle-mobile:focus-visible {
+    outline: none;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 2px white, 0 0 0 4px #ff9800; /* El anillo naranja */
+}
+
+/* 3. Limpiar el foco cuando es con el RATÓN */
+/* Esto asegura que al pinchar no salga nada raro */
+.sidebar-toggle-mobile:focus:not(:focus-visible) {
+    outline: none;
+    box-shadow: 0 4px 12px rgba(85, 112, 241, 0.4); /* Mantiene su sombra azul normal */
 }
 
 @media (max-width: 1024px) {
@@ -1976,4 +1990,60 @@ body {
     .board-header-info h1 {
         font-size: 20px;
     }
+}
+
+/* Esto asegura que el ratón se vea como una manita al pasar por encima */
+.action-focusable {
+    cursor: pointer;
+    outline: none; /* Quitamos el borde azul feo por defecto */
+    border-radius: 50%; /* Si quieres que el foco sea redondo */
+    padding: 2px;
+    transition: background-color 0.2s;
+}
+
+/* SOLO se verá así cuando llegues con el TABULADOR */
+.action-focusable:focus {
+    background-color: white;       /* Fondo blanco para resaltar */
+    box-shadow: 0 0 0 2px #333;    /* Un anillo negro alrededor */
+    transform: scale(1.2);         /* Se hace un pelín más grande */
+    z-index: 10;
+}
+
+/* --- Estilo para el foco en el botón de Comentarios --- */
+
+/* Aseguramos que el div reaccione visualmente */
+.btn-comment {
+    cursor: pointer;
+    transition: background-color 0.2s, box-shadow 0.2s;
+    outline: none; /* Quitamos el borde azul feo */
+}
+
+/* Cuando llegues con el TABULADOR */
+.btn-comment:focus {
+    background-color: rgba(255, 255, 255, 0.8); /* Fondo casi blanco */
+    box-shadow: inset 0 0 0 2px #333; /* Borde interno negro para que se vea bien */
+    font-weight: bold;
+}
+
+/* --- Foco para adjuntos (PDFs e Imágenes) --- */
+
+.action-focusable-rect {
+    cursor: pointer;
+    transition: all 0.2s ease;
+    outline: none; /* Quitamos el borde azul por defecto */
+    border-radius: 4px; /* Un poco redondeado */
+}
+
+/* Cuando llegues con el TABULADOR */
+.action-focusable-rect:focus {
+    box-shadow: 0 0 0 2px #333, 0 0 0 4px white; /* Doble borde para que resalte sobre cualquier color */
+    transform: translateY(-2px); /* Se levanta un poquito */
+    position: relative; 
+    z-index: 5; /* Para que se superponga si hay algo cerca */
+}
+
+/* Específico para el bloque del PDF para que se note más el cambio de fondo */
+.note-attachment:focus {
+    background-color: rgba(255, 255, 255, 0.9);
+    color: black;
 }

@@ -4,11 +4,18 @@
         <div class="muralia-logo-dot"></div>
     </div>
     <div class="user-profile-container">
-        <div class="user-profile" (click)="toggleUserMenu(); $event.stopPropagation()">
+        <div class="user-profile" 
+             (click)="toggleUserMenu(); $event.stopPropagation()"
+             (keydown.enter)="toggleUserMenu(); $event.stopPropagation()"
+             tabindex="0"
+             role="button"
+             aria-label="Menú de usuario">
+             
             <div class="avatar-circle">{{ userName.charAt(0).toUpperCase() }}</div>
             <div class="user-name">{{ userName }}</div>
             <div class="dropdown-icon">▼</div>
         </div>
+        
         <div class="user-menu" *ngIf="showUserMenu" (click)="$event.stopPropagation()">
             <button class="menu-item logout-btn" (click)="logout()">
                 <span class="menu-icon">🚪</span>
@@ -26,7 +33,6 @@
         <input type="text" class="search-input" placeholder="Buscar Murales..." [(ngModel)]="searchTerm">
     </div>
 
-    <!-- Invitations Section (NUEVO) -->
     <div *ngIf="invitations.length > 0 && searchTerm === ''" class="invitations-section">
         <h2 class="section-title">Invitaciones Pendientes ({{ invitations.length }})</h2>
         <div class="invitations-grid">
@@ -43,35 +49,36 @@
         </div>
     </div>
 
-    <!-- Loading state (Solo si no hay datos) -->
     <div *ngIf="loading && boards.length === 0" class="loading-state">
         <p>⏳ Cargando murales...</p>
     </div>
 
-    <!-- Background refreshing indicator -->
     <div *ngIf="loading && boards.length > 0" class="refreshing-mini">
         Sincronizando...
     </div>
 
-    <!-- Error state -->
     <div *ngIf="error && !loading" class="error-state">
         <p>❌ {{ error }}</p>
         <button (click)="loadBoards()" class="retry-button">Reintentar</button>
     </div>
 
-    <!-- Empty state -->
     <div *ngIf="!loading && !error && boards.length === 0 && searchTerm === ''" class="empty-state">
         <p>📋 No tienes murales aún. ¡Crea el primero!</p>
     </div>
 
-    <!-- No results state -->
     <div *ngIf="!loading && !error && filteredBoards.length === 0 && searchTerm !== ''" class="empty-state">
         <p>🔍 No se encontraron murales que coincidan con "{{ searchTerm }}"</p>
     </div>
 
-    <!-- Boards grid -->
     <div class="cards-grid" *ngIf="filteredBoards.length > 0">
-        <div *ngFor="let board of filteredBoards" class="card active-project" (click)="navigateToBoard(board._id)">
+        <div *ngFor="let board of filteredBoards" 
+             class="card active-project" 
+             (click)="navigateToBoard(board._id)"
+             (keydown.enter)="navigateToBoard(board._id)"
+             tabindex="0"
+             role="button"
+             [attr.aria-label]="'Abrir tablero ' + board.titulo">
+
             <div class="card-header-project">
                 <div class="project-icon-branded">
                     <span class="m-logo">M</span>
@@ -99,7 +106,10 @@
                 <span class="badge" [class.badge-public]="board.privacidad !== 'privado'">
                     {{ getPrivacyLabel(board.privacidad) }}
                 </span>
-                <button class="delete-btn-minimal" (click)="deleteBoard(board, $event)" title="Eliminar mural">
+                <button class="delete-btn-minimal" 
+                        (click)="deleteBoard(board, $event); $event.stopPropagation()" 
+                        (keydown.enter)="deleteBoard(board, $event); $event.stopPropagation()"
+                        title="Eliminar mural">
                     🗑️
                 </button>
             </div>
@@ -107,11 +117,19 @@
     </div>
 </div>
 
-<div class="fab-button" (click)="openCreateModal()">+</div>
+<div class="fab-button" 
+     (click)="openCreateModal()" 
+     (keydown.enter)="openCreateModal()"
+     tabindex="0"
+     role="button"
+     aria-label="Crear nuevo mural">+</div>
 
-<!-- Custom Create Modal -->
 <div class="modal-overlay" *ngIf="showCreateModal" (click)="closeCreateModal()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content" 
+         (click)="$event.stopPropagation()"
+         cdkTrapFocus 
+         cdkTrapFocusAutoCapture>
+         
         <div class="modal-header">
             <span>+</span>
             <span>Crear nuevo Mural</span>
@@ -150,9 +168,12 @@
     </div>
 </div>
 
-<!-- Custom Delete Modal -->
 <div class="modal-overlay" *ngIf="showDeleteModal" (click)="cancelDelete()">
-    <div class="modal-content" (click)="$event.stopPropagation()">
+    <div class="modal-content" 
+         (click)="$event.stopPropagation()"
+         cdkTrapFocus 
+         cdkTrapFocusAutoCapture>
+         
         <div class="modal-header">
             <h2>¿Eliminar mural?</h2>
         </div>

@@ -130,3 +130,24 @@ a {
     display: none !important;
   }
 }
+
+/*   ACCESIBILIDAD Y FOCO VISIBLE (WCAG 2.1) */
+
+:focus-visible {
+  outline: 3px solid #f59e0b; 
+  outline-offset: 2px;       
+  border-radius: 4px;        
+  z-index: 10;               
+}
+
+
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+input:focus-visible,
+textarea:focus-visible {
+  border-color: var(--primary);
+  outline: 3px solid var(--primary-hover);
+  outline-offset: 0;
+}

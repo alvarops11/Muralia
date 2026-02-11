@@ -135,12 +135,6 @@
 <div class="app-layout" [class.sidebar-open-mobile]="mostrarSidebarMobile"
     style="display: flex; height: 100vh; overflow: hidden;">
 
-    <!-- Botón Toggle Sidebar (Solo Mobile) -->
-    <button class="sidebar-toggle-mobile" (click)="toggleSidebarMobile()"
-        *ngIf="!mostrarLoginInvitado && !mostrarModal && !mostrarBuscar && !mostrarCompartir && !mostrarExportar && !mostrarEstadisticas">
-        <span *ngIf="!mostrarSidebarMobile">☰</span>
-        <span *ngIf="mostrarSidebarMobile">×</span>
-    </button>
 
     <!-- Overlay para cerrar sidebar en mobile -->
     <div class="sidebar-overlay-mobile" *ngIf="mostrarSidebarMobile" (click)="cerrarSidebarMobile()"></div>
@@ -233,13 +227,23 @@
                         <span *ngIf="locks[posit.posit_id]" class="lock-icon"
                             [title]="'Editando: ' + locks[posit.posit_id]">🔒</span>
 
-                        <span *ngIf="!locks[posit.posit_id]" class="edit-icon"
+                        <span *ngIf="!locks[posit.posit_id]" 
+                            class="edit-icon action-focusable"
+                            tabindex="0"
                             (click)="abrirEditar(posit); $event.stopPropagation()"
-                            (mousedown)="$event.stopPropagation()">✏️</span>
+                            (keyup.enter)="abrirEditar(posit)"
+                            (mousedown)="$event.stopPropagation()"
+                            role="button"
+                            aria-label="Editar">✏️</span>
 
-                        <span class="delete-icon" [class.disabled]="locks[posit.posit_id]"
+                        <span class="delete-icon action-focusable"
+                            [class.disabled]="locks[posit.posit_id]"
+                            tabindex="0"
                             (click)="borrarPosit(posit.posit_id); $event.stopPropagation()"
-                            (mousedown)="$event.stopPropagation()">🗑️</span>
+                            (keyup.enter)="borrarPosit(posit.posit_id)"
+                            (mousedown)="$event.stopPropagation()"
+                            role="button"
+                            aria-label="Borrar">🗑️</span>
                     </div>
                 </div>
 
@@ -251,8 +255,13 @@
                 </div>
 
                 <!-- Vista Previa de Imagen -->
-                <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'image'" class="note-image-preview"
-                    (click)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()">
+                <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'image'" 
+                    class="note-image-preview action-focusable-rect"
+                    tabindex="0"
+                    role="button"
+                    aria-label="Ver imagen completa"
+                    (click)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()"
+                    (keyup.enter)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()">
                     <img [src]="getFullUrl(posit.archivoUrl)" [alt]="posit.archivoNombre">
                 </div>
 
@@ -263,13 +272,24 @@
                 </div>
 
                 <!-- Archivo Genérico -->
-                <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'other'" class="note-attachment"
-                    (click)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()">
+                <div *ngIf="posit.archivoUrl && getFileType(posit.archivoNombre) === 'other'" 
+                    class="note-attachment action-focusable-rect"
+                    tabindex="0"
+                    role="button"
+                    [attr.aria-label]="'Descargar ' + posit.archivoNombre"
+                    (click)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()"
+                    (keyup.enter)="descargarArchivo(posit.archivoUrl, posit.archivoNombre); $event.stopPropagation()">
                     <span class="attachment-icon">📄</span>
                     <span class="attachment-name">{{ posit.archivoNombre }}</span>
                 </div>
 
-                <div class="btn-comment" (click)="abrirComentarios(posit); $event.stopPropagation()">
+                <div class="btn-comment" 
+                    tabindex="0" 
+                    role="button" 
+                    aria-label="Abrir comentarios"
+                    (click)="abrirComentarios(posit); $event.stopPropagation()" 
+                    (keyup.enter)="abrirComentarios(posit); $event.stopPropagation()">
+                    
                     💬 Comentarios
                     <span *ngIf="posit.comentarios?.length" class="comment-badge">{{ posit.comentarios.length }}</span>
                 </div>
@@ -320,5 +340,16 @@
             </div>
         </div>
     </aside>
+
+    <button class="sidebar-toggle-mobile" 
+            type="button"
+            tabindex="0"
+            role="button"
+            (click)="toggleSidebarMobile()"
+            aria-label="Menú lateral"
+            *ngIf="!mostrarLoginInvitado && !mostrarModal && !mostrarBuscar && !mostrarCompartir && !mostrarExportar && !mostrarEstadisticas">
+        <span *ngIf="!mostrarSidebarMobile">☰</span>
+        <span *ngIf="mostrarSidebarMobile">×</span>
+    </button>
 
 </div>

@@ -220,3 +220,50 @@
 .collab-count.comment-count {
     color: #10b981;
 }
+
+/* --- Footer del Modal (Nuevo) --- */
+.modal-footer {
+    background-color: #f8f9fa; /* Gris muy suave */
+    border-top: 1px solid #e2e8f0;
+    padding: 15px 30px;
+    display: flex;
+    justify-content: flex-end; /* Alinea el botón a la derecha */
+    border-bottom-left-radius: 20px; /* Para seguir la curva del modal */
+    border-bottom-right-radius: 20px;
+}
+
+.btn-close-stats {
+    background-color: #6c5ce7; /* El mismo morado del header */
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 2px 5px rgba(108, 92, 231, 0.3);
+}
+
+.btn-close-stats:hover {
+    background-color: #5b4bc4; /* Un poco más oscuro al pasar el ratón */
+    transform: translateY(-1px);
+}
+
+.btn-close-stats:active {
+    transform: scale(0.98); /* Efecto de pulsación */
+}
+
+/* Ajuste para móviles: botón grande y centrado */
+@media (max-width: 480px) {
+    .modal-footer {
+        justify-content: center;
+        padding: 15px;
+    }
+    
+    .btn-close-stats {
+        width: 100%;
+        padding: 12px;
+        font-size: 16px;
+    }
+}

@@ -1070,3 +1070,19 @@ body {
         gap: 10px;
     }
 }
+
+/* --- ACCESIBILIDAD PARA EL BOTÓN DE BORRAR --- */
+.delete-btn-minimal:focus {
+    opacity: 1 !important;        /* Lo obliga a ser visible */
+    visibility: visible !important; /* Se asegura de que se vea */
+    outline: 2px solid #ff4444;   /* Le pone un borde rojo para que sepas que estás ahí */
+    background-color: white;      /* Fondo blanco para que destaque sobre la tarjeta */
+    transform: scale(1.1);        /* Lo hace un pelín más grande */
+}
+
+/* --- ACCESIBILIDAD MENU USUARIO --- */
+.user-menu .menu-item:focus {
+    outline: 2px solid #ff8800; /* Borde naranja visible */
+    background-color: #f0f0f0;  /* Fondo gris claro para resaltar */
+    font-weight: bold;          /* Texto en negrita al tener el foco */
+}
